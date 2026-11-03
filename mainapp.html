@@ -1,0 +1,2466 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ハブラシ・ジェット</title>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon: #5ff5ff;
+            --neon-pink: #ff5fd2;
+            --good: #7dffb0;
+            --bad: #b6ff3b;
+            --gold: #ffe45f;
+            --panel: rgba(10, 8, 40, 0.74);
+            --text: #ffffff;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: #000;
+            color: var(--text);
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #game {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        canvas { display: block; width: 100%; height: 100%; }
+
+        .hidden { display: none !important; }
+
+        .num { font-family: 'Orbitron', sans-serif; }
+
+        /* ---------- HUD ---------- */
+        #hud { position: absolute; inset: 0; pointer-events: none; }
+
+        #hud-top {
+            position: absolute;
+            top: 12px; left: 16px; right: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chip {
+            background: var(--panel);
+            border: 2px solid var(--neon);
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-weight: 800;
+            font-size: clamp(12px, 2.2vw, 16px);
+            box-shadow: 0 0 12px rgba(95, 245, 255, 0.45);
+            white-space: nowrap;
+        }
+
+        #world-chip.cavity {
+            border-color: var(--bad);
+            color: var(--bad);
+            box-shadow: 0 0 14px rgba(182, 255, 59, 0.55);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        #world-chip.fever {
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: 0 0 14px rgba(255, 228, 95, 0.6);
+        }
+
+        #question-panel {
+            position: absolute;
+            top: 58px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(760px, calc(100% - 32px));
+            background: var(--panel);
+            border: 2px solid var(--neon);
+            border-radius: 16px;
+            padding: 12px 18px 14px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(95, 245, 255, 0.4), inset 0 0 18px rgba(95, 245, 255, 0.15);
+        }
+
+        #q-label {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon);
+            font-size: clamp(11px, 1.8vw, 14px);
+            letter-spacing: 3px;
+        }
+
+        #q-text {
+            font-weight: 900;
+            font-size: clamp(18px, 3.4vw, 30px);
+            line-height: 1.35;
+            margin-top: 2px;
+        }
+
+        #dist {
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: clamp(11px, 1.8vw, 14px);
+            font-weight: 800;
+            color: #cfe9ff;
+        }
+
+        #dist-track {
+            flex: 1;
+            height: 10px;
+            border-radius: 99px;
+            background: rgba(255, 255, 255, 0.15);
+            overflow: hidden;
+        }
+
+        #dist-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #ff5f7a, #ffd65f, var(--neon));
+            border-radius: 99px;
+        }
+
+        /* ---------- 選択肢 ---------- */
+        #choices {
+            position: absolute;
+            left: 16px; right: 16px;
+            bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .choice {
+            pointer-events: auto;
+            cursor: pointer;
+            width: min(360px, 46%);
+            background: var(--panel);
+            border: 3px solid var(--neon);
+            border-radius: 18px;
+            padding: 10px 14px 12px;
+            box-shadow: 0 0 16px rgba(95, 245, 255, 0.4);
+            transition: transform .2s, opacity .3s, border-color .2s;
+        }
+
+        .choice .dir {
+            text-align: center;
+            font-size: clamp(11px, 1.8vw, 14px);
+            font-weight: 800;
+            color: var(--neon);
+        }
+
+        .choice .opt {
+            text-align: center;
+            font-weight: 900;
+            font-size: clamp(20px, 3.8vw, 32px);
+            line-height: 1.25;
+            margin: 2px 0 8px;
+            overflow-wrap: anywhere;
+        }
+
+        .task {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 6px 8px;
+        }
+
+        .task .map { flex: 0 0 auto; width: clamp(48px, 7vw, 70px); }
+        .task .map svg { display: block; width: 100%; height: auto; }
+
+        .task .zone {
+            font-weight: 800;
+            font-size: clamp(11px, 1.7vw, 15px);
+            line-height: 1.35;
+        }
+
+        .task .hint {
+            font-size: clamp(10px, 1.4vw, 12px);
+            color: #cfe9ff;
+        }
+
+        .motion {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+            background: rgba(95, 245, 255, 0.18);
+            border-radius: 99px;
+            padding: 2px 12px;
+            font-weight: 900;
+            font-size: clamp(12px, 1.9vw, 16px);
+            white-space: nowrap;
+        }
+
+        .motion b { font-size: 1.35em; line-height: 1; }
+
+        .gauge {
+            margin-top: 8px;
+            height: 10px;
+            border-radius: 99px;
+            background: rgba(255, 255, 255, 0.15);
+            overflow: hidden;
+        }
+
+        .gauge i {
+            display: block;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--neon), #fff);
+            border-radius: 99px;
+        }
+
+        .choice.brushing { border-color: #ffffff; box-shadow: 0 0 22px rgba(255, 255, 255, 0.7); }
+
+        .choice.picked {
+            border-color: var(--gold);
+            box-shadow: 0 0 26px rgba(255, 228, 95, 0.8);
+            transform: translateY(-6px) scale(1.03);
+        }
+
+        .choice.dim { opacity: 0.3; }
+
+        #run-msg {
+            position: absolute;
+            left: 50%;
+            bottom: 18px;
+            transform: translateX(-50%);
+            background: var(--panel);
+            border: 2px solid var(--gold);
+            border-radius: 999px;
+            padding: 8px 20px;
+            font-weight: 900;
+            font-size: clamp(14px, 2.4vw, 20px);
+            white-space: nowrap;
+            box-shadow: 0 0 18px rgba(255, 228, 95, 0.5);
+        }
+
+        #run-msg.idle { animation: pulse .8s ease-in-out infinite; border-color: #ff8fa3; }
+
+        /* ---------- フィーバー（ここをみがこう！） ---------- */
+        #coach {
+            position: absolute;
+            left: 50%;
+            bottom: 18px;
+            transform: translateX(-50%);
+            width: min(560px, calc(100% - 32px));
+            background: rgba(10, 8, 40, 0.9);
+            border: 3px solid var(--gold);
+            border-radius: 20px;
+            padding: 12px 18px 14px;
+            text-align: center;
+            box-shadow: 0 0 28px rgba(255, 228, 95, 0.55);
+        }
+
+        #coach-title {
+            font-weight: 900;
+            color: var(--gold);
+            font-size: clamp(16px, 2.8vw, 24px);
+        }
+
+        #coach .task { justify-content: center; text-align: left; margin-top: 6px; background: none; }
+        #coach .task .map { width: clamp(70px, 11vw, 110px); }
+        #coach .task .zone { font-size: clamp(14px, 2.4vw, 20px); }
+        #coach .motion { font-size: clamp(14px, 2.4vw, 20px); }
+
+        #coach-count {
+            margin-top: 4px;
+            font-weight: 900;
+            font-size: clamp(16px, 2.6vw, 22px);
+        }
+
+        #coach-count .num {
+            font-size: 2em;
+            color: var(--gold);
+            text-shadow: 0 0 14px rgba(255, 228, 95, 0.7);
+            vertical-align: -0.1em;
+        }
+
+        #coach.idle #coach-count { animation: pulse .8s ease-in-out infinite; }
+
+        #key-hint {
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            white-space: nowrap;
+        }
+
+        /* ---------- バナー・フラッシュ ---------- */
+        #banner {
+            position: absolute;
+            top: 44%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+            width: calc(100% - 32px);
+        }
+
+        #banner-main {
+            font-weight: 900;
+            font-size: clamp(40px, 9vw, 96px);
+            letter-spacing: 2px;
+            -webkit-text-stroke: 2px rgba(0, 0, 0, 0.5);
+            text-shadow: 0 0 24px currentColor;
+        }
+
+        #banner-sub {
+            margin-top: 6px;
+            display: inline-block;
+            background: var(--panel);
+            border-radius: 12px;
+            padding: 6px 16px;
+            font-weight: 800;
+            font-size: clamp(14px, 2.6vw, 22px);
+        }
+
+        #banner-sub { max-width: min(760px, 100%); line-height: 1.5; }
+
+        /* FAST / BASIC */
+        .mode-pick { display: grid; grid-template-columns: 1.8fr 1fr; align-items: center; gap: 10px; margin: 14px auto 0; max-width: 420px; }
+        .mode-pick button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px; border-radius: 14px; background: var(--panel); color: #fff; border: 2px solid rgba(255, 255, 255, .3); box-shadow: none; cursor: pointer; }
+        .mode-pick button b { font-family: 'Orbitron', sans-serif; font-size: 18px; letter-spacing: 2px; }
+        .mode-pick button small { font-size: 12px; opacity: .8; }
+        .mode-pick button.on { border-color: var(--neon); box-shadow: 0 0 16px rgba(95, 245, 255, .55); background: rgba(95, 245, 255, .15); }
+        /* 2分（BASIC）がメイン、1分（FAST）はおまけ */
+        .mode-pick button[data-mode="basic"] { padding: 16px 10px; }
+        .mode-pick button[data-mode="basic"] b { font-size: 24px; }
+        .mode-pick button[data-mode="basic"] small { font-size: 14px; }
+        .mode-pick button[data-mode="fast"] { padding: 6px; }
+        .mode-pick button[data-mode="fast"] b { font-size: 15px; }
+        .mode-pick button[data-mode="fast"] small { font-size: 11px; }
+
+        #banner.good #banner-main { color: var(--good); }
+        #banner.bad #banner-main { color: var(--bad); }
+        #banner.info #banner-main { color: var(--neon); }
+        #banner.fever #banner-main { color: var(--gold); }
+        #banner.show { animation: pop .45s cubic-bezier(.2, 1.6, .4, 1); }
+
+        #flash {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* ---------- タイトル・結果画面 ---------- */
+        .hud-right { display: flex; gap: 8px; align-items: center; }
+        .chip-btn { pointer-events: auto; cursor: pointer; user-select: none; }
+        .chip-btn.off { opacity: .55; border-color: rgba(255, 255, 255, .4); box-shadow: none; }
+
+        /* 判定チェック（Dキー） */
+        #debug {
+            position: absolute; left: 12px; bottom: 12px; z-index: 50;
+            width: min(320px, calc(100% - 24px));
+            background: rgba(5, 5, 20, .88); border: 1px solid rgba(95, 245, 255, .5); border-radius: 12px;
+            padding: 10px 12px; font: 12px/1.5 ui-monospace, Menlo, monospace; color: #dff;
+            pointer-events: none;
+        }
+        #debug .dm { display: grid; grid-template-columns: 118px 1fr 30px; gap: 6px; align-items: center; }
+        #debug .db { height: 8px; border-radius: 4px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+        #debug .db i { display: block; height: 100%; background: var(--neon); }
+        #debug .dlog { margin-top: 6px; color: #9bb; white-space: pre; }
+
+        /* きろく */
+        #screen-log { z-index: 40; background: rgba(5, 0, 20, .94); }
+        #log-list { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; text-align: left; }
+        .log-item {
+            background: var(--panel); border: 1px solid rgba(255, 255, 255, .2); border-radius: 12px;
+            padding: 10px 14px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+        }
+        .log-item:hover, .log-item.sel { border-color: var(--neon); }
+        #log-detail { text-align: left; background: var(--panel); border-radius: 12px; padding: 12px 14px; font-size: 13px; }
+        #log-detail table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        #log-detail td { padding: 3px 4px; border-bottom: 1px solid rgba(255, 255, 255, .1); }
+        #log-detail td.n { text-align: right; white-space: nowrap; }
+
+        .screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: radial-gradient(ellipse at center, rgba(10, 5, 40, 0.4), rgba(5, 0, 20, 0.85));
+            overflow-y: auto;
+        }
+
+        .card {
+            width: min(640px, 100%);
+            text-align: center;
+            margin: auto;
+        }
+
+        .logo-sub {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon);
+            letter-spacing: 6px;
+            font-size: clamp(11px, 2vw, 15px);
+        }
+
+        h1 {
+            margin: 4px 0 0;
+            font-weight: 900;
+            font-size: clamp(30px, 8vw, 68px);
+            white-space: nowrap;
+            line-height: 1.1;
+            background: linear-gradient(180deg, #ffffff 10%, var(--neon) 55%, var(--neon-pink));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            filter: drop-shadow(0 0 14px rgba(95, 245, 255, 0.6));
+        }
+
+        .tagline {
+            font-weight: 800;
+            font-size: clamp(15px, 3vw, 22px);
+            margin: 6px 0 16px;
+        }
+
+        .rules {
+            background: var(--panel);
+            border: 2px solid rgba(95, 245, 255, 0.6);
+            border-radius: 16px;
+            padding: 14px 18px;
+            text-align: left;
+            font-size: clamp(13px, 2.1vw, 16px);
+            line-height: 1.75;
+            margin-bottom: 16px;
+        }
+
+        .rules b { color: var(--neon); }
+        .rules .bad { color: var(--bad); }
+        .rules .gold { color: var(--gold); }
+
+        .motion-list {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+            text-align: center;
+            font-size: clamp(11px, 1.8vw, 13px);
+            font-weight: 800;
+        }
+
+        .motion-list div {
+            background: rgba(95, 245, 255, 0.12);
+            border-radius: 10px;
+            padding: 4px 2px;
+        }
+
+        .motion-list b { display: block; font-size: 1.6em; line-height: 1.1; color: var(--neon); }
+
+        .btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        button {
+            font-family: inherit;
+            font-weight: 900;
+            font-size: clamp(15px, 2.6vw, 20px);
+            color: #0a0630;
+            background: linear-gradient(180deg, #ffffff, var(--neon));
+            border: none;
+            border-radius: 999px;
+            padding: 12px 26px;
+            cursor: pointer;
+            box-shadow: 0 0 18px rgba(95, 245, 255, 0.7);
+            transition: transform .15s;
+        }
+
+        button:hover { transform: scale(1.05); }
+        button.sub { background: linear-gradient(180deg, #ffffff, #c9b8ff); box-shadow: 0 0 14px rgba(201, 184, 255, 0.6); }
+
+        .res-grid {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            align-items: stretch;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .res-box {
+            flex: 1 1 240px;
+            background: var(--panel);
+            border: 2px solid rgba(95, 245, 255, 0.6);
+            border-radius: 16px;
+            padding: 12px 14px;
+        }
+
+        .res-box h3 {
+            margin: 0 0 4px;
+            font-size: 14px;
+            color: var(--neon);
+            letter-spacing: 2px;
+        }
+
+        .score-big {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(48px, 10vw, 84px);
+            font-weight: 900;
+            color: var(--gold);
+            text-shadow: 0 0 24px rgba(255, 228, 95, 0.7);
+            line-height: 1;
+        }
+
+        .score-big small { font-size: 0.4em; color: #fff; }
+
+        #res-rank {
+            display: inline-block;
+            margin: 8px 0 4px;
+            padding: 4px 16px;
+            border-radius: 999px;
+            border: 2px solid var(--neon);
+            font-weight: 900;
+            font-size: clamp(16px, 3vw, 22px);
+        }
+
+        #res-msg, #res-brush-msg { font-weight: 800; font-size: clamp(13px, 2.2vw, 16px); line-height: 1.6; }
+
+        #res-map { width: 150px; margin: 0 auto; }
+        #res-map svg { display: block; width: 100%; height: auto; }
+
+        .brush-big {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: clamp(30px, 6vw, 44px);
+            color: var(--good);
+        }
+
+        #conn-status {
+            position: absolute;
+            right: 10px;
+            bottom: 4px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.55);
+            pointer-events: none;
+        }
+
+        @keyframes pop {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        @keyframes pulse {
+            50% { opacity: 0.55; }
+        }
+
+        @media (max-width: 640px) {
+            #question-panel { top: 52px; padding: 10px 12px; }
+            .choice { padding: 8px 8px 10px; }
+            .task { flex-direction: column; text-align: center; gap: 4px; }
+            #key-hint { display: none; }
+            .motion-list { grid-template-columns: repeat(2, 1fr); }
+        }
+        /* よこ もちの スマホ（せが ひくい）：もじを たかさに あわせて ちいさくし、問題と カードが かさならないように */
+        @media (max-height: 520px) and (orientation: landscape) {
+            #hud-top { top: 6px; }
+            .chip { padding: 3px 10px; font-size: 12px; }
+            #question-panel { top: 40px; padding: 6px 14px 8px; width: min(640px, calc(100% - 24px)); }
+            #q-label { font-size: 10px; letter-spacing: 2px; }
+            #q-text { font-size: clamp(14px, 4.6vh, 20px); line-height: 1.25; }
+            #dist { margin-top: 4px; font-size: 11px; }
+            #dist-track { height: 6px; }
+            #choices { left: 10px; right: 10px; bottom: 8px; }
+            .choice { width: min(340px, 40%); padding: 6px 10px 8px; border-width: 2px; }
+            .choice .dir { font-size: 11px; }
+            .choice .opt { font-size: clamp(14px, 5vh, 22px); margin: 0 0 4px; }
+            .task { padding: 4px 6px; gap: 6px; }
+            .task .map { width: 40px; }
+            .task .zone { font-size: 11px; }
+            .task .hint { display: none; }
+            .motion { font-size: 12px; padding: 1px 10px; margin-top: 2px; }
+            .gauge { margin-top: 4px; height: 6px; }
+            #key-hint { display: none; }
+        }
+    </style>
+</head>
+<body>
+<div id="game">
+    <canvas id="cv"></canvas>
+
+    <!-- プレイ中の表示 -->
+    <div id="hud" class="hidden">
+        <div id="hud-top">
+            <div id="world-chip" class="chip">🦷 ピカピカワールド</div>
+            <div class="hud-right">
+                <div class="chip"><span id="q-count-label">もんだい</span> <span id="q-count" class="num">1/10</span>　⭐ <span id="score" class="num">0</span></div>
+                <div class="chip chip-btn" id="bgm-btn" onclick="toggleBgm()" title="BGM（Mキー）">🔊</div>
+            </div>
+        </div>
+
+        <div id="key-hint">
+            キーボード：↑↓ たて ／ ←→ よこ ／ C ぐるぐる ／ G うちがわ ／ D 判定チェック ／ M BGM
+        </div>
+
+        <div id="question-panel" class="hidden">
+            <div id="q-label">QUESTION 1</div>
+            <div id="q-text"></div>
+            <div id="dist">
+                <span>わかれ道まで</span>
+                <div id="dist-track"><div id="dist-fill"></div></div>
+                <span id="dist-sec" class="num">20</span>
+            </div>
+        </div>
+
+        <div id="choices" class="hidden">
+            <div class="choice" id="choice-0" data-side="0">
+                <div class="dir">◀ ひだりの道</div>
+                <div class="opt" id="opt-0"></div>
+                <div class="task" id="task-0"></div>
+                <div class="gauge"><i id="gauge-0"></i></div>
+            </div>
+            <div class="choice" id="choice-1" data-side="1">
+                <div class="dir">みぎの道 ▶</div>
+                <div class="opt" id="opt-1"></div>
+                <div class="task" id="task-1"></div>
+                <div class="gauge"><i id="gauge-1"></i></div>
+            </div>
+        </div>
+
+        <div id="run-msg" class="hidden"></div>
+
+        <div id="coach" class="hidden">
+            <div id="coach-title">ここを みがこう！</div>
+            <div class="task" id="coach-task"></div>
+            <div id="coach-count">あと <span id="coach-sec" class="num">0</span> びょう</div>
+        </div>
+    </div>
+
+    <div id="banner" class="hidden">
+        <div id="banner-main"></div>
+        <div id="banner-sub"></div>
+    </div>
+
+    <div id="flash"></div>
+
+    <!-- タイトル画面 -->
+    <div id="screen-title" class="screen">
+        <div class="card">
+            <div class="logo-sub">ORAL ADVENTURE</div>
+            <h1>ハブラシ・ジェット</h1>
+            <div class="tagline">〜 おくちの中の大冒険 〜</div>
+            <div class="rules">
+                ハブラシジェットに乗って、おくちの中の世界をかけぬけよう！<br>
+                こたえの下に出ている <b>場所</b> を、<b>みがき方</b> のとおりにみがくと、その道にすすむよ。<br>
+                まちがえると <span class="bad">むしばの世界</span> におちちゃう…！ つぎの問題に正解すれば だっしゅつできるよ。<br>
+                問題のあとは <span class="gold">フィーバータイム</span>。みがきのこした場所をピカピカにしよう！<br>
+                問題は SPI・一般常識・時事・雑学。こたえのあとに <b>ひとこと解説</b> が出るよ。
+                <div class="mode-pick" id="mode-pick">
+                    <button data-mode="basic"><b>BASIC</b><small>2分・20問</small></button>
+                    <button data-mode="fast"><b>FAST</b><small>1分・8問</small></button>
+                </div>
+                <div class="motion-list">
+                    <div><b>↕</b>たてみがき</div>
+                    <div><b>↔</b>よこみがき</div>
+                    <div><b>↻</b>ぐるぐるみがき</div>
+                    <div><b>⤵</b>うちがわみがき</div>
+                </div>
+            </div>
+            <div class="btns">
+                <button onclick="connectBluetooth()">micro:bit とつなぐ</button>
+                <button class="sub" onclick="startGame(true)">テストモードであそぶ</button>
+                <button class="sub" onclick="openLog()">きろくを見る</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- きろく -->
+    <div id="screen-log" class="screen hidden">
+        <div class="card">
+            <div class="logo-sub">RECORD</div>
+            <h2 style="margin:6px 0 0">はみがきの きろく</h2>
+            <div id="log-list"></div>
+            <div id="log-detail" class="hidden"></div>
+            <div class="btns">
+                <button class="sub" onclick="closeLog()">とじる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 結果画面 -->
+    <div id="screen-result" class="screen hidden">
+        <div class="card">
+            <div class="logo-sub">GOAL</div>
+            <div class="res-grid">
+                <div class="res-box">
+                    <h3>クイズ</h3>
+                    <div class="score-big"><span id="res-score">0</span><small id="res-total"> / 20</small></div>
+                    <div id="res-rank"></div>
+                    <div id="res-msg"></div>
+                </div>
+                <div class="res-box">
+                    <h3>はみがき</h3>
+                    <div id="res-map"></div>
+                    <div class="brush-big"><span id="res-brush">0</span><small style="font-size:.5em">%</small></div>
+                    <div id="res-brush-msg"></div>
+                </div>
+            </div>
+            <div class="btns">
+                <button onclick="startGame(isSimulated)">もういちど あそぶ</button>
+                <button class="sub" onclick="backToTitle()">タイトルへ</button>
+                <button class="sub" onclick="openLog(currentSessionId)">きろくを見る</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="conn-status"></div>
+</div>
+
+<script>
+    /* =========================================================
+       問題データ（a が正解、b がまちがい。左右はランダム）
+       正解・不正解に合わせて、出す難しさを裏で切りかえる
+       ========================================================= */
+    const QUESTION_BANK = {
+        // e は こたえのあとに出す ひとこと解説
+        easy: [
+            { q: "「一石二鳥」と にた意味のことばは？", a: "一挙両得", b: "一長一短", e: "どちらも「1つのことで2つの得をする」という意味。一長一短は「よい所も悪い所もある」こと。" },
+            { q: "「慎重」の反対の意味のことばは？", a: "軽率", b: "丁寧", e: "慎重＝注意深いこと。軽率＝よく考えずに行動すること。" },
+            { q: "定価1000円の「2割引き」はいくら？", a: "800円", b: "980円", e: "2割＝20%。1000円 × 0.8 ＝ 800円。" },
+            { q: "時速60kmで30分進むと、何km進む？", a: "30km", b: "60km", e: "道のり＝速さ×時間。60 × 0.5時間 ＝ 30km。" },
+            { q: "日本の国会は、衆議院と何でできている？", a: "参議院", b: "貴族院", e: "2つの議院でできた「二院制」。貴族院は戦前の制度。" },
+            { q: "物価が上がりつづけ、お金の価値が下がることを何という？", a: "インフレ", b: "デフレ", e: "インフレーションの略。物価が下がりつづけるのがデフレ。" },
+            { q: "国連の「SDGs」の目標はいくつ？", a: "17こ", b: "10こ", e: "2030年までに達成をめざす、17の「持続可能な開発目標」。" },
+            { q: "1ドル＝100円が 1ドル＝150円になった。これは？", a: "円安", b: "円高", e: "1ドルを買うのに より多くの円が必要＝円の価値が下がった → 円安。" },
+            { q: "タコの心臓は いくつ？", a: "3つ", b: "1つ", e: "全身に血を送る心臓が1つと、エラ用の心臓が2つ。" },
+            { q: "日本で選挙に投票できる年齢は？", a: "18歳から", b: "20歳から", e: "2016年に20歳から18歳に引き下げられた。" },
+            { q: "「推敲（すいこう）」の意味は？", a: "文章を何度も練り直すこと", b: "相手の気持ちを推しはかること", e: "唐の詩人が「推す」か「敲く」かで悩んだ故事から。" },
+            { q: "1000円の品を「1割」値上げすると？", a: "1100円", b: "1010円", e: "1割＝10%。1000円 × 1.1 ＝ 1100円。" },
+            { q: "世界でいちばん人口が多い国は？（2023年以降）", a: "インド", b: "中国", e: "国連の推計で、2023年にインドが中国をぬいて1位になった。" },
+            { q: "「割愛（かつあい）」の正しい意味は？", a: "おしみながら省くこと", b: "愛情を分けあたえること", e: "「時間の都合で説明を割愛します」のように使う。" },
+            { q: "日本の消費税の標準の税率は？", a: "10%", b: "8%", e: "食料品などは「軽減税率」で8%。" },
+            { q: "地球温暖化の主な原因とされる気体は？", a: "二酸化炭素", b: "酸素", e: "CO₂などの「温室効果ガス」が熱を閉じこめる。" },
+            { q: "「AI」は何の略？", a: "人工知能", b: "自動インターネット", e: "Artificial Intelligence（アーティフィシャル・インテリジェンス）の略。" },
+            { q: "12,000円を5人で割り勘すると、1人いくら？", a: "2,400円", b: "2,500円", e: "12000 ÷ 5 ＝ 2400円。" },
+            { q: "「他山の石」の意味は？", a: "他人の失敗も自分の役に立てる", b: "他人の成功をうらやむ", e: "よその山の質の悪い石でも、自分の宝石をみがくのに使えるという意味から。" },
+            { q: "1日は何秒？", a: "86,400秒", b: "36,000秒", e: "24時間 × 60分 × 60秒 ＝ 86,400秒。" },
+            { q: "キリンの首の骨の数は？", a: "人間と同じ7こ", b: "人間より多い", e: "ほとんどの哺乳類は首の骨が7こ。キリンは1こ1こが長い。" },
+            { q: "2024年から新しい1万円札の顔になった人は？", a: "渋沢栄一", b: "福沢諭吉", e: "「日本の資本主義の父」と呼ばれる実業家。500以上の会社づくりにかかわった。" },
+            { q: "「役不足」の本来の意味は？", a: "力に対して役目が軽すぎる", b: "役目に対して力が足りない", e: "よく逆の意味で使われることば。力が足りないのは「力不足」。" },
+            { q: "東京オリンピック2020が実際に開かれた年は？", a: "2021年", b: "2020年", e: "新型コロナウイルスの影響で1年延期された。" },
+            { q: "「雰囲気」の正しい読み方は？", a: "ふんいき", b: "ふいんき", e: "「雰（ふん）」＋「囲気（いき）」。言いまちがえやすいことば。" }
+        ],
+        normal: [
+            { q: "原価800円の品に25%の利益をのせた定価は？", a: "1,000円", b: "1,025円", e: "800 × 1.25 ＝ 1000円。SPIの「損益算」の基本。" },
+            { q: "「医者：病院」と同じ関係は？", a: "教師：学校", b: "生徒：教科書", e: "「人：その人が働く場所」の関係。SPIの「二語の関係」。" },
+            { q: "「鉛筆：文房具」と同じ関係は？", a: "りんご：果物", b: "机：いす", e: "「AはBの一種」という包含関係。" },
+            { q: "「漸次（ぜんじ）」の意味は？", a: "だんだんと", b: "とつぜん", e: "「漸次改善する」のように、少しずつ進むようすを表す。" },
+            { q: "A・B・Cの3人を1列にならべる方法は何通り？", a: "6通り", b: "3通り", e: "3 × 2 × 1 ＝ 6通り（順列）。" },
+            { q: "分速80mで1.2kmの道を歩くと何分？", a: "15分", b: "12分", e: "1200m ÷ 80m ＝ 15分。単位をそろえるのがコツ。" },
+            { q: "中央銀行が金利を上げると、一般にどうなる？", a: "お金を借りにくくなる", b: "物価が急に上がる", e: "借りる人が減って景気の過熱がおさえられ、物価上昇もゆるやかになりやすい。" },
+            { q: "「GDP」の日本語の名前は？", a: "国内総生産", b: "国民総所得", e: "国内で1年間に生み出されたモノやサービスの価値の合計。" },
+            { q: "「杞憂（きゆう）」の意味は？", a: "取りこし苦労", b: "深い悲しみ", e: "杞の国の人が「天が落ちてこないか」と心配した故事から。" },
+            { q: "濃度10%の食塩水200gにふくまれる食塩は？", a: "20g", b: "10g", e: "200 × 0.1 ＝ 20g。SPIの「濃度算」。" },
+            { q: "「ステークホルダー」の意味は？", a: "利害関係者", b: "株の売買をする人", e: "客・社員・取引先・地域など、会社とかかわるすべての人。" },
+            { q: "「サブスク」とは どんなしくみ？", a: "定額で一定期間つかえる", b: "中古品を売り買いする", e: "サブスクリプションの略。動画や音楽の配信サービスなど。" },
+            { q: "「おもむろに」の正しい意味は？", a: "ゆっくりと", b: "とつぜんに", e: "「不意に」の意味でつかうのは誤用。" },
+            { q: "2割引きの品を さらに1割引くと、元の値段の何%？", a: "72%", b: "70%", e: "0.8 × 0.9 ＝ 0.72。割引は足し算ではなく、かけ算で考える。" },
+            { q: "パリ協定がめざす気温上昇のおさえ方（産業革命前とくらべて）は？", a: "2℃未満（1.5℃めざす）", b: "4℃未満", e: "2015年に結ばれた、温暖化対策の国際的なルール。" },
+            { q: "マイナンバーは何けた？", a: "12けた", b: "10けた", e: "国民一人ひとりに配られる12けたの番号。" },
+            { q: "サイコロ2こを ふって、合計が7になる確率は？", a: "6分の1", b: "12分の1", e: "36通りのうち (1,6)(2,5)(3,4)(4,3)(5,2)(6,1) の6通り。" },
+            { q: "「拙速（せっそく）」の意味は？", a: "へたでも速いこと", b: "おそくても丁寧なこと", e: "「拙速を尊ぶ」＝完ぺきでなくても早く仕上げるほうがよい。" },
+            { q: "大人の体の約何%が水分？", a: "約60%", b: "約30%", e: "子どもはさらに多く、約70%。" },
+            { q: "時給1,200円で1日6時間、週4日はたらくと1週間でいくら？", a: "28,800円", b: "24,000円", e: "1200 × 6 × 4 ＝ 28,800円。" },
+            { q: "「フードロス」とは？", a: "食べられるのに捨てられる食品", b: "食料が足りず飢えること", e: "日本では年間400万トン以上が捨てられていると言われる。" },
+            { q: "「枚挙にいとまがない」の意味は？", a: "数えきれないほど多い", b: "いそがしくて時間がない", e: "1つ1つ数えあげる（枚挙）ひまがない、というところから。" },
+            { q: "金星・地球・火星のうち、太陽にいちばん近いのは？", a: "金星", b: "火星", e: "太陽に近い順に、水星・金星・地球・火星…。" },
+            { q: "ブラックホールの姿が はじめて撮影・公開されたのは？", a: "2019年", b: "2009年", e: "世界中の電波望遠鏡をつないだ「イベント・ホライズン・テレスコープ」の成果。" },
+            { q: "首相（内閣総理大臣）を指名するのは？", a: "国会", b: "天皇", e: "国会が指名し、天皇が任命する。" }
+        ],
+        hard: [
+            { q: "定価の3割引きで売っても、原価の5%の利益が出た。定価は原価の何倍？", a: "1.5倍", b: "1.35倍", e: "定価×0.7 ＝ 原価×1.05 → 定価 ＝ 原価×1.5。" },
+            { q: "5人から代表2人を選ぶ組み合わせは何通り？", a: "10通り", b: "20通り", e: "順番は関係ないので 5×4÷2 ＝ 10通り（組み合わせ）。" },
+            { q: "Aは1人で12日、Bは1人で6日かかる仕事。2人ですると何日？", a: "4日", b: "9日", e: "1日の仕事量は 1/12＋1/6 ＝ 3/12 ＝ 1/4。だから4日。SPIの「仕事算」。" },
+            { q: "「忸怩（じくじ）たる思い」の意味は？", a: "自分のことを深くはじる気持ち", b: "ほこらしく思う気持ち", e: "「忸怩たる思いだ」＝自分のふがいなさを はずかしく思う。" },
+            { q: "所得が低い人ほど負担の割合が大きくなる「逆進性」が問題とされる税は？", a: "消費税", b: "所得税", e: "だれでも同じ税率なので、収入にしめる税の割合は低所得の人ほど大きくなる。" },
+            { q: "円高になると一般に有利になるのは？", a: "輸入する会社", b: "輸出する会社", e: "円の価値が上がると、外国の品を安く買える。輸出品は外国で高くなり売れにくい。" },
+            { q: "「蓋然性（がいぜんせい）」の意味は？", a: "ある事が起こる確からしさ", b: "かならずそうなること", e: "「蓋然性が高い」＝たぶんそうなるだろう。かならずなら「必然性」。" },
+            { q: "「示唆（しさ）」の意味は？", a: "それとなく教えること", b: "はっきり命令すること", e: "「示唆に富む話」＝ヒントがたくさんある話。" },
+            { q: "行きは時速4km、帰りは時速6kmで往復した。平均の時速は？", a: "4.8km", b: "5km", e: "道のりを12kmとすると 行き3時間＋帰り2時間。24km ÷ 5時間 ＝ 4.8km。" },
+            { q: "「パラダイムシフト」の意味は？", a: "考え方の枠組みが大きく変わること", b: "計画を少しずつ直すこと", e: "天動説から地動説への変化などが、よく例にあげられる。" },
+            { q: "1から100までの整数をすべて足すと？", a: "5050", b: "5000", e: "(1＋100) × 100 ÷ 2 ＝ 5050。数学者ガウスが子どものころに見つけたと言われる。" },
+            { q: "衆議院議員の任期は？", a: "4年", b: "6年", e: "ただし解散がある。参議院は6年で解散がなく、3年ごとに半数を選ぶ。" },
+            { q: "「三権分立」を唱えたフランスの思想家は？", a: "モンテスキュー", b: "ルソー", e: "著書『法の精神』で、立法・行政・司法を分ける考えを示した。" },
+            { q: "日本の人口はおよそ何人？（2024年ごろ）", a: "約1億2千万人", b: "約1億5千万人", e: "2008年ごろをピークに減りつづけている。" },
+            { q: "「エビデンス」の意味は？", a: "根拠・証拠", b: "予想・推測", e: "「エビデンスにもとづいて判断する」のように使う。" },
+            { q: "9%の食塩水300gに水を何g加えると6%になる？", a: "150g", b: "100g", e: "食塩は27g。27 ÷ 0.06 ＝ 450g だから、水を150g足す。" },
+            { q: "「捲土重来（けんどちょうらい）」の意味は？", a: "一度負けた者が勢いをもりかえす", b: "土地をたがやして豊作を待つ", e: "土けむりを巻き上げて、ふたたびせめて来るようすから。" },
+            { q: "「白夜（びゃくや）」が見られるのは？", a: "北極・南極に近い地域の夏", b: "赤道に近い地域の冬", e: "地軸がかたむいているため、真夜中でも太陽がしずまない日がある。" },
+            { q: "地球から月までの距離は およそ？", a: "約38万km", b: "約3,800km", e: "地球を約10周する距離。光なら約1.3秒でとどく。" },
+            { q: "「ESG投資」のEがあらわすのは？", a: "環境", b: "経済", e: "Environment（環境）・Social（社会）・Governance（企業統治）。" },
+            { q: "「インバウンド」の意味は？", a: "外国から日本への旅行（者）", b: "日本から外国への旅行", e: "日本から外国へ出かけるのは「アウトバウンド」。" },
+            { q: "2でわっても3でわっても1あまる、いちばん小さい2けたの数は？", a: "13", b: "11", e: "6でわって1あまる数（7, 13, 19…）。2けたで最小は13。" },
+            { q: "「冗長（じょうちょう）」の反対に近いことばは？", a: "簡潔", b: "冗談", e: "冗長＝むだに長いこと。簡潔＝短くて要点がまとまっていること。" },
+            { q: "光合成でつくられる栄養分は？", a: "でんぷん", b: "たんぱく質", e: "光のエネルギーで、水と二酸化炭素からでんぷん（ブドウ糖）と酸素をつくる。" },
+            { q: "「温故知新」の意味は？", a: "昔のことから新しい知識を得る", b: "新しいことだけを大切にする", e: "『論語』のことば。「故きを温ねて新しきを知る」。" }
+        ]
+    };
+    const LEVELS = ['easy', 'normal', 'hard'];
+    const LEVEL_UP_STREAK = 2;   // この回数つづけて正解すると、1段むずかしくする（まちがえると1段やさしく）
+
+    /* =========================================================
+       はみがきの場所と磨き方（参考：歯の磨き方.pdf の ①〜⑫）
+       ①②③ 上の歯そとがわ（右→前→左） ④⑤⑥ 上の歯うちがわ（左→前→右）
+       ⑦⑧⑨ 下の歯そとがわ（右→前→左） ⑩⑪⑫ 下の歯うちがわ（左→前→右）
+       ========================================================= */
+    const ZONES = {
+        1:  { jaw: '上', part: 'みぎの奥歯', face: 'そとがわ' },
+        2:  { jaw: '上', part: '前歯',       face: 'そとがわ' },
+        3:  { jaw: '上', part: 'ひだりの奥歯', face: 'そとがわ' },
+        4:  { jaw: '上', part: 'ひだりの奥歯', face: 'うちがわ' },
+        5:  { jaw: '上', part: '前歯',       face: 'うちがわ' },
+        6:  { jaw: '上', part: 'みぎの奥歯', face: 'うちがわ' },
+        7:  { jaw: '下', part: 'みぎの奥歯', face: 'そとがわ' },
+        8:  { jaw: '下', part: '前歯',       face: 'そとがわ' },
+        9:  { jaw: '下', part: 'ひだりの奥歯', face: 'そとがわ' },
+        10: { jaw: '下', part: 'ひだりの奥歯', face: 'うちがわ' },
+        11: { jaw: '下', part: '前歯',       face: 'うちがわ' },
+        12: { jaw: '下', part: 'みぎの奥歯', face: 'うちがわ' }
+    };
+
+    // micro:bit から届く値: "0"=たて "1"=よこ "2"=ぐるぐる "3"=うちがわ
+    const MOTIONS = [
+        { name: 'たてみがき', icon: '↕' },
+        { name: 'よこみがき', icon: '↔' },
+        { name: 'ぐるぐるみがき', icon: '↻' },
+        { name: 'うちがわみがき', icon: '⤵' }
+    ];
+
+    const CIRCLED = ['', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫'];
+
+    // 場所×磨き方 の組み合わせ（16種類・合計 120 秒。1セット5秒）
+    // うちがわ(4,5,6,10,11,12)：うちがわ 5秒×2セット
+    // 奥歯そとがわ：よこ 5秒（①③⑦⑨それぞれ）＋ ぐるぐる 5秒×2セット（みぎの奥歯①⑦ / ひだりの奥歯③⑨ でまとめる）
+    // 前歯そとがわ(2,8)：たて 5秒＋よこ 5秒（歯ぐきのあたり）
+    // FAST（1分）：場所を まとめて 7.5秒 × 8つに。ぜんぶの 場所（①〜⑫）を 合計 60秒で みがく（1問で 1つ）
+    function makeFastTasks() {
+        const list = [
+            { zones: [1, 7], motion: 2, need: 7.5, label: 'みぎの奥歯（上と下・そとがわ）' },
+            { zones: [3, 9], motion: 2, need: 7.5, label: 'ひだりの奥歯（上と下・そとがわ）' },
+            { zones: [2, 8], motion: 0, need: 7.5, label: '前歯（上と下・そとがわ）' },
+            { zones: [5, 11], motion: 0, need: 7.5, label: '前歯の うら（上と下）', hint: 'ハブラシを たてて' },
+            { zones: [1, 2, 3], motion: 1, need: 7.5, label: '上の歯（そとがわ ぜんぶ）', hint: '歯ぐきのあたりを' },
+            { zones: [7, 8, 9], motion: 1, need: 7.5, label: '下の歯（そとがわ ぜんぶ）', hint: '歯ぐきのあたりを' },
+            { zones: [4, 5, 6], motion: 3, need: 7.5, label: '上の歯（うちがわ ぜんぶ）' },
+            { zones: [10, 11, 12], motion: 3, need: 7.5, label: '下の歯（うちがわ ぜんぶ）' }
+        ];
+        return list.map(t => ({
+            ...t,
+            id: t.zones.map(z => CIRCLED[z]).join('') + MOTIONS[t.motion].name.replace('みがき', ''),
+            done: 0
+        }));
+    }
+
+    function makeTasks() {
+        const list = [];
+        for (let z = 1; z <= 12; z++) {
+            if ([4, 5, 6, 10, 11, 12].includes(z)) {
+                list.push({ zones: [z], motion: 3, need: 10 });
+            } else if ([1, 3, 7, 9].includes(z)) {
+                if (z === 1) list.push({ zones: [1, 7], motion: 2, need: 10, label: 'みぎの奥歯（上と下・そとがわ）' });
+                if (z === 3) list.push({ zones: [3, 9], motion: 2, need: 10, label: 'ひだりの奥歯（上と下・そとがわ）' });
+                list.push({ zones: [z], motion: 1, need: 5 });
+            } else {
+                list.push({ zones: [z], motion: 0, need: 5 });
+                list.push({ zones: [z], motion: 1, need: 5, hint: '歯ぐきのあたりを' });
+            }
+        }
+        return list.map(t => ({
+            ...t,
+            id: t.zones.map(z => CIRCLED[z]).join('') + MOTIONS[t.motion].name.replace('みがき', ''),
+            done: 0
+        }));
+    }
+
+    function zoneLabel(z) {
+        const d = ZONES[z];
+        return `${d.jaw}の歯・${d.part}（${d.face}）`;
+    }
+
+    function taskLabel(t) {
+        return t.label || zoneLabel(t.zones[0]);
+    }
+
+    function taskLabelHtml(t) {
+        return taskLabel(t).replace(/（(.*)）$/, '<span style="white-space:nowrap">（$1）</span>');
+    }
+
+    /* ---------- 口の図（鏡を見たときの向き：自分のみぎが画面のみぎ） ---------- */
+    // 角度は PDF（むかい合って見た向き）で決めて、描くときに左右反転する
+    const ZONE_ARC = {
+        1: ['U', 'o', 180, 240], 2: ['U', 'o', 240, 300], 3: ['U', 'o', 300, 360],
+        6: ['U', 'i', 180, 240], 5: ['U', 'i', 240, 300], 4: ['U', 'i', 300, 360],
+        7: ['L', 'o', 120, 180], 8: ['L', 'o', 60, 120], 9: ['L', 'o', 0, 60],
+        12: ['L', 'i', 120, 180], 11: ['L', 'i', 60, 120], 10: ['L', 'i', 0, 60]
+    };
+
+    function arcD(cx, cy, rx, ry, a0, a1) {
+        const pt = a => [cx + rx * Math.cos(a * Math.PI / 180), cy + ry * Math.sin(a * Math.PI / 180)];
+        const [x0, y0] = pt(a0), [x1, y1] = pt(a1);
+        return `M${x0.toFixed(1)},${y0.toFixed(1)} A${rx},${ry} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}`;
+    }
+
+    // colorOf(zone) が色を返す。highlight（場所の配列）は光らせる
+    function mouthSvg(colorOf, highlight = []) {
+        let paths = '';
+        for (const z of Object.keys(ZONE_ARC).map(Number)) {
+            const [jaw, face, a0, a1] = ZONE_ARC[z];
+            const cy = jaw === 'U' ? 48 : 64;
+            const rx = face === 'o' ? 40 : 25, ry = face === 'o' ? 38 : 23;
+            const col = colorOf(z);
+            const d = arcD(50, cy, rx, ry, a0 + 4, a1 - 4);
+            const glow = highlight.includes(z) ? `<path d="${d}" stroke="${col}" stroke-width="16" stroke-linecap="round" fill="none" opacity=".35"/>` : '';
+            paths += glow + `<path d="${d}" stroke="${col}" stroke-width="${face === 'o' ? 9 : 7}" stroke-linecap="round" fill="none"/>`;
+        }
+        return `<svg viewBox="0 0 100 112" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(100 0) scale(-1 1)">${paths}</g>
+            <text x="2" y="59" font-size="8" font-weight="800" fill="#cfe9ff">ひだり</text>
+            <text x="98" y="59" font-size="8" font-weight="800" fill="#cfe9ff" text-anchor="end">みぎ</text>
+            <text x="50" y="40" font-size="7" font-weight="800" fill="#cfe9ff" text-anchor="middle">うえ</text>
+            <text x="50" y="78" font-size="7" font-weight="800" fill="#cfe9ff" text-anchor="middle">した</text>
+        </svg>`;
+    }
+
+    function highlightSvg(zones) {
+        return mouthSvg(z => (zones.includes(z) ? '#ffe45f' : 'rgba(255,255,255,0.2)'), zones);
+    }
+
+    function taskHtml(t) {
+        const m = MOTIONS[t.motion];
+        return `<div class="map">${highlightSvg(t.zones)}</div>
+            <div>
+                <div class="zone">${taskLabelHtml(t)}</div>
+                ${t.hint ? `<div class="hint">${t.hint}</div>` : ''}
+                <div class="motion"><b>${m.icon}</b>${m.name}</div>
+            </div>`;
+    }
+
+    /* =========================================================
+       定数
+       ========================================================= */
+    // FAST（1分）／BASIC（2分）
+    const MODES = {
+        fast:  { label: 'FAST', totalQ: 8, setSec: 7.5, resolveMs: 3200, gapMs: 250 },
+        basic: { label: 'BASIC', totalQ: 20, setSec: 5, resolveMs: 4200, gapMs: 600 }
+    };
+    let mode = (() => { try { return localStorage.getItem('hamigaki-mode') === 'fast' ? 'fast' : 'basic'; } catch (e) { return 'basic'; } })();
+    let TOTAL_Q = MODES[mode].totalQ;
+    let SET_SEC = 5;             // 1セットのみがく秒数（1問で1セット）。FAST では 6
+    const QTIME = 20;            // わかれ道までの秒数
+    const SPEED_Q = 1.8;         // 問題中のスピード
+    const SELECT_SEC = 2.5;      // この秒数みがくと道が決まる
+    const HOLD_SEC = 0.6;        // micro:bit の信号がとぎれても、この秒数は「みがいている」とみなす
+    const FEVER_EXTRA = 1;       // フィーバーでは足りない秒数より少し長めにみがく
+    const SPEED_CRUISE = 8;
+    const ZNEAR = 1, ZFAR = 62;  // 描画する奥行き
+    const HALF = 1.15;           // 道の半分の幅
+    const CAM_H = 1.5;           // カメラの高さ
+    const CEIL = 3.6;            // 上の歯ぐきの高さ
+    const SPREAD = 0.5, MAXSPREAD = 2.9;  // わかれ道の開き方
+    const Z_PLAYER = 2.2;
+    const DECIDE_Z = Z_PLAYER + 1.2;      // ここまでに選ばないと時間切れ
+    const GATE_D = 9;            // わかれ道からゲートまでの距離
+    const TOOTH_SP = 2.4;        // 歯のならぶ間隔
+
+    const PALETTES = {
+        clean: {
+            sky: ['#1b0a3a', '#5b1c6e', '#ff6f91'],
+            glow: 'rgba(170, 245, 255, ',
+            star: 'rgba(255, 255, 255, ',
+            gumFar: '#7a2a55', gumNear: '#c94a73',
+            road1: [255, 140, 162], road2: [238, 116, 145], fog: [255, 111, 145],
+            groove: 'rgba(160, 40, 80, 0.55)',
+            neon: '#5ff5ff', divider: '#8f2f5c',
+            tooth: ['#ffffff', '#c9dcf2'], toothEdge: '#9fb6d6', gum: '#e8668a',
+            gate: '#6cf6ff'
+        },
+        cavity: {
+            sky: ['#05080a', '#1d2410', '#4f4a14'],
+            glow: 'rgba(180, 255, 80, ',
+            star: 'rgba(190, 255, 120, ',
+            gumFar: '#2b1d14', gumNear: '#5a3a26',
+            road1: [124, 98, 70], road2: [104, 82, 58], fog: [79, 74, 20],
+            groove: 'rgba(40, 25, 10, 0.6)',
+            neon: '#b6ff3b', divider: '#3a2618',
+            tooth: ['#dcc78c', '#8f7444'], toothEdge: '#5e4826', gum: '#6e3b2a',
+            gate: '#b6ff3b'
+        },
+        fever: {
+            sky: ['#1a0638', '#6a2bb8', '#ffb347'],
+            glow: 'rgba(255, 236, 150, ',
+            star: 'rgba(255, 240, 180, ',
+            gumFar: '#6a2a7a', gumNear: '#c9509a',
+            road1: [255, 214, 120], road2: [255, 186, 92], fog: [255, 179, 71],
+            groove: 'rgba(200, 110, 30, 0.5)',
+            neon: '#ffe45f', divider: '#7a2a6a',
+            tooth: ['#ffffff', '#ffe9c2'], toothEdge: '#e0b870', gum: '#ff7fb0',
+            gate: '#ffe45f'
+        }
+    };
+
+    /* =========================================================
+       状態
+       ========================================================= */
+    const cv = document.getElementById('cv');
+    const C = cv.getContext('2d');
+    const view = { W: 0, H: 0, cx: 0, hz: 0, F: 0 };
+
+    let state = 'title';        // title / cruise / question / resolve / feverIntro / fever / feverSpot / result
+    let world = 'clean';
+    let quizEndWorld = 'clean';
+    let isSimulated = true;
+    let travel = 0, speed = 6, camX = 0, tilt = 0, shake = 0, time = 0;
+    let qIndex = 0, score = 0, cavityCount = 0;
+    let level = 1, streak = 0, usedQuestions = new Set();   // 難しさ（画面には出さない）
+    let current = null;         // { q, opts:[左,右], correctSide, tasks:[左,右], sel:[秒,秒] }
+    let fork = { active: false, z: 0, choice: -1 };
+    let run = null;             // 道を選んだあと、ゲートまでの進み具合
+    let lastResultCorrect = true;
+    let timers = [];
+
+    // はみがきの記録（画面には出さず、裏で記録する）
+    let tasks = makeTasks();
+    let answers = [];
+    let startedAt = null;
+    let fever = { list: [], task: null, left: 0, wall: 0, max: 0, index: 0, total: 0 };
+    const motionUntil = [0, 0, 0, 0];
+
+    const stars = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random(), p: Math.random() * 6 }));
+    let particles = [];
+
+    /* =========================================================
+       Bluetooth (UART) — rpg.html / haiishasan.html と同じ方式
+       ========================================================= */
+    const UART_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    const UART_TX_CHAR_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+    const UART_RX_CHAR_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+    let rxCharacteristic = null;
+
+    async function connectBluetooth() {
+        if (!navigator.bluetooth) {
+            alert("Bluetooth非対応のブラウザです。テストモードを使用してください。");
+            return;
+        }
+        try {
+            const device = await navigator.bluetooth.requestDevice({
+                filters: [{ namePrefix: "BBC micro:bit" }],
+                optionalServices: [UART_SERVICE_UUID]
+            });
+            device.addEventListener('gattserverdisconnected', () => {
+                rxCharacteristic = null;
+                setStatus("micro:bit との接続が切れました");
+            });
+            const server = await device.gatt.connect();
+            const service = await server.getPrimaryService(UART_SERVICE_UUID);
+            rxCharacteristic = await service.getCharacteristic(UART_RX_CHAR_UUID);
+            const txChar = await service.getCharacteristic(UART_TX_CHAR_UUID);
+
+            await txChar.startNotifications();
+            txChar.addEventListener('characteristicvaluechanged', (e) => {
+                const text = new TextDecoder().decode(e.target.value);
+                text.split(/\r?\n/).map(s => s.trim()).filter(Boolean).forEach(onMotion);
+            });
+
+            setStatus("micro:bit 接続中");
+            startGame(false);
+        } catch (error) {
+            console.error(error);
+            alert("接続がキャンセルされたか、失敗しました。\n" + error);
+        }
+    }
+
+    async function sendFeedback(msg) {
+        if (rxCharacteristic && !isSimulated) {
+            try {
+                await rxCharacteristic.writeValue(new TextEncoder().encode(msg + "\n"));
+            } catch (e) {
+                console.error("送信エラー:", e);
+            }
+        }
+    }
+
+    function setStatus(text) {
+        document.getElementById('conn-status').innerText = text;
+    }
+
+    /* =========================================================
+       入力：みがき動作を受け取って「いま何みがきをしているか」を持つ
+       ========================================================= */
+    function onMotion(code) {
+        logSignal(code);
+        if (!/^[0-3]$/.test(code)) return;
+        motionUntil[Number(code)] = time + HOLD_SEC;
+    }
+
+    function isBrushing(motion) {
+        return motionUntil[motion] > time;
+    }
+
+    const KEY_MOTION = { ArrowUp: 0, ArrowDown: 0, ArrowLeft: 1, ArrowRight: 1, c: 2, C: 2, g: 3, G: 3 };
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'd' || e.key === 'D') { toggleDebug(); return; }
+        if (e.key === 'm' || e.key === 'M') { toggleBgm(); return; }
+        if (e.key in KEY_MOTION) {
+            onMotion(String(KEY_MOTION[e.key]));
+            e.preventDefault();
+        }
+    });
+    window.addEventListener('keyup', (e) => {
+        if (e.key in KEY_MOTION) motionUntil[KEY_MOTION[e.key]] = 0;
+    });
+
+    document.querySelectorAll('.choice').forEach(el => {
+        el.addEventListener('click', () => choose(Number(el.dataset.side)));
+    });
+
+    /* =========================================================
+       音
+       ========================================================= */
+    let audioCtx = null;
+
+    function tone(freq, dur, type = 'sine', vol = 0.1, delay = 0) {
+        if (!audioCtx) return;
+        const t0 = audioCtx.currentTime + delay;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, t0);
+        gain.gain.setValueAtTime(vol, t0);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start(t0);
+        osc.stop(t0 + dur + 0.02);
+    }
+
+    function jingle(good) {
+        const notes = good ? [523, 659, 784, 1047] : [392, 330, 262, 196];
+        notes.forEach((f, i) => tone(f, 0.18, good ? 'triangle' : 'sawtooth', good ? 0.1 : 0.06, i * 0.1));
+    }
+
+    function speak(text) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const uttr = new SpeechSynthesisUtterance(text);
+            uttr.lang = "ja-JP";
+            uttr.rate = 1.1;
+            bgmDuck(true);
+            uttr.onend = uttr.onerror = () => bgmDuck(false);
+            window.speechSynthesis.speak(uttr);
+        }
+    }
+
+    /* =========================================================
+       ゲーム進行
+       ========================================================= */
+    function later(ms, fn) { timers.push(setTimeout(fn, ms)); }
+    function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+
+    function shuffle(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function show(id, on) { document.getElementById(id).classList.toggle('hidden', !on); }
+
+    function isDone(t) { return t.done >= t.need; }
+
+    // いまの難しさから、まだ出していない問題を選ぶ。なければとなりの難しさから
+    function nextQuestionItem() {
+        const order = [level, level - 1, level + 1, level - 2, level + 2].filter(l => l >= 0 && l < LEVELS.length);
+        for (const l of order) {
+            const pool = QUESTION_BANK[LEVELS[l]].filter(q => !usedQuestions.has(q));
+            if (pool.length) {
+                const item = pool[Math.floor(Math.random() * pool.length)];
+                usedQuestions.add(item);
+                level = l;
+                return item;
+            }
+        }
+        usedQuestions.clear();
+        return nextQuestionItem();
+    }
+
+    function adjustLevel(correct) {
+        if (correct) {
+            streak++;
+            if (streak >= LEVEL_UP_STREAK && level < LEVELS.length - 1) { level++; streak = 0; }
+        } else {
+            streak = 0;
+            if (level > 0) level--;
+        }
+    }
+
+    // 選択肢にする2つの組み合わせを決める。
+    // ・2つは必ずちがう磨き方（場所は判定できないため）
+    // ・のこり時間が多い磨き方から選ぶ（最後に同じ磨き方だけがのこって2択がつくれなくなるのをふせぐ）
+    // ・前の問題と同じ場所、2つの選択肢どうしで同じ場所は、できるだけさける
+    let lastZones = [];
+
+    function pickTasks() {
+        const rest = [0, 0, 0, 0];
+        for (const t of tasks) rest[t.motion] += Math.max(0, t.need - t.done);
+        const order = [0, 1, 2, 3].filter(m => rest[m] > 0).sort((x, y) => rest[y] - rest[x]);
+        const overlap = (t, zones) => t.zones.some(z => zones.includes(z));
+        const open = m => tasks.filter(t => t.motion === m && !isDone(t));
+        // のこりが少ない組み合わせを補うため、終わっていても いちばんみがけていないものを使う
+        const leastDone = m => tasks.filter(t => t.motion === m)
+            .reduce((best, t) => (!best || t.done / t.need < best.done / best.need ? t : best), null);
+        const pick = (m, avoid) => {
+            const list = open(m);
+            return list.find(t => !overlap(t, avoid)) || null;
+        };
+
+        const ma = order[0] ?? Math.floor(Math.random() * 4);
+        const a = pick(ma, lastZones) || open(ma)[0] || leastDone(ma);
+
+        // 2つめ：のこりが多い順に、場所がかぶらないものをさがす
+        let b = null;
+        for (const m of order.slice(1)) {
+            b = pick(m, [...lastZones, ...a.zones]);
+            if (b) break;
+        }
+        if (!b) {
+            const mb = order[1] ?? [0, 1, 2, 3].filter(m => m !== ma)
+                .sort((x, y) => leastDone(x).done / leastDone(x).need - leastDone(y).done / leastDone(y).need)[0];
+            b = pick(mb, a.zones) || open(mb)[0] || leastDone(mb);
+        }
+        return [a, b];
+    }
+
+    function startGame(sim) {
+        if (!audioCtx) {
+            try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { audioCtx = null; }
+        }
+        clearTimers();
+        isSimulated = sim;
+        if (sim) setStatus("テストモード");
+        level = 1; streak = 0; usedQuestions = new Set();
+        qIndex = 0; score = 0; cavityCount = 0;
+        TOTAL_Q = MODES[mode].totalQ;
+        SET_SEC = MODES[mode].setSec;
+        tasks = mode === 'fast' ? makeFastTasks() : makeTasks();
+        answers = [];
+        lastZones = [];
+        startedAt = new Date();
+        logStart();
+        bgmStart();
+        world = 'clean';
+        fork.active = false;
+        run = null;
+        camX = 0;
+        resetParticles();
+
+        show('screen-title', false);
+        show('screen-result', false);
+        show('hud', true);
+        show('question-panel', false);
+        show('choices', false);
+        show('run-msg', false);
+        show('coach', false);
+        show('key-hint', sim);
+        updateHud();
+
+        state = 'cruise';
+        showBanner('info', 'しゅっぱつ！', 'はみがきしながら おくちの中を冒険しよう');
+        speak("しゅっぱつ！");
+        later(2200, () => { hideBanner(); later(400, startQuestion); });
+    }
+
+    function startQuestion() {
+        const item = nextQuestionItem();
+        const correctSide = Math.random() < 0.5 ? 0 : 1;
+        const opts = correctSide === 0 ? [item.a, item.b] : [item.b, item.a];
+        const pair = shuffle(pickTasks());
+        current = { q: item.q, e: item.e, level: LEVELS[level], opts, correctSide, tasks: pair, sel: [0, 0] };
+        lastZones = pair.flatMap(t => t.zones);
+        logCtx('question', pair.map(t => t.motion), { tasks: pair.map(t => t.id), level: current.level, q: item.q });
+
+        fork = { active: true, z: DECIDE_Z + SPEED_Q * QTIME, choice: -1 };
+        run = null;
+
+        document.getElementById('q-label').innerText = 'QUESTION ' + (qIndex + 1);
+        document.getElementById('q-text').innerText = item.q;
+        for (const side of [0, 1]) {
+            document.getElementById('opt-' + side).innerText = opts[side];
+            document.getElementById('task-' + side).innerHTML = taskHtml(pair[side]);
+            document.getElementById('gauge-' + side).style.width = '0%';
+        }
+        document.querySelectorAll('.choice').forEach(el => el.classList.remove('picked', 'dim', 'brushing'));
+        show('question-panel', true);
+        show('choices', true);
+        show('run-msg', false);
+        updateHud();
+
+        state = 'question';
+        speak(`${item.q}　ひだり、${opts[0]}。みぎ、${opts[1]}。`);
+    }
+
+    function canChoose() {
+        return state === 'question' && fork.choice < 0 && fork.z > DECIDE_Z;
+    }
+
+    function choose(side) {
+        if (!canChoose()) return;
+        const t = current.tasks[side];
+        fork.choice = side;
+        // この問題で合計 SET_SEC 秒（道を選ぶまで＋ゲートまで）みがくとゲートに着く
+        const need = Math.max(1.5, Math.min(SET_SEC - current.sel[side], t.need - t.done));
+        run = { need, crawl: need * 3 + 4, dist: fork.z + GATE_D - Z_PLAYER, p: 0 };
+        logCtx('choose', [t.motion], { task: t.id, side });
+
+        document.getElementById('choice-' + side).classList.add('picked');
+        document.getElementById('choice-' + (1 - side)).classList.add('dim');
+        document.getElementById('gauge-' + side).style.width = '100%';
+        show('run-msg', true);
+        tone(880, 0.12, 'triangle', 0.08);
+        sendFeedback("O");
+        speak("そのまま みがいて すすもう！");
+    }
+
+    function resolve(correct, timeout) {
+        state = 'resolve';
+        lastResultCorrect = correct;
+        const wasCavity = world === 'cavity';
+        const answer = current.opts[current.correctSide];
+        answers.push({
+            q: current.q,
+            e: current.e,
+            level: current.level,
+            choice: fork.choice < 0 ? null : current.opts[fork.choice],
+            correct,
+            tasks: current.tasks.map(t => t.id)
+        });
+        logCtx('resolve', [], { correct, timeout: !!timeout });
+        show('run-msg', false);
+
+        if (correct) {
+            score++;
+            jingle(true);
+            sendFeedback("O");
+            if (wasCavity) {
+                showBanner('good', 'だっしゅつ成功！', '💡 ' + current.e);
+                speak("だっしゅつせいこう！　" + current.e);
+            } else {
+                showBanner('good', 'せいかい！', '💡 ' + current.e);
+                speak("せいかい！　" + current.e);
+            }
+        } else {
+            cavityCount++;
+            jingle(false);
+            sendFeedback("X");
+            shake = 1;
+            const head = timeout ? 'じかんぎれ！' : 'ざんねん…';
+            const tail = wasCavity ? 'まだ むしばの世界からぬけられない…' : 'むしばの世界におちていく〜！';
+            showBanner('bad', head, `こたえは「${answer}」　${tail}<br>💡 ${current.e}`);
+            speak(`${head}　こたえは、${answer}。${current.e}`);
+        }
+        adjustLevel(correct);
+        updateHud();
+
+        later(800, () => flash(correct ? '#ffffff' : '#142004'));
+        later(1050, () => {
+            fork.active = false;
+            run = null;
+            camX = 0;
+            world = correct ? 'clean' : 'cavity';
+            resetParticles();
+            show('question-panel', false);
+            show('choices', false);
+            updateHud();
+        });
+        later(MODES[mode].resolveMs, () => {
+            hideBanner();
+            qIndex++;
+            if (qIndex >= TOTAL_Q) {
+                quizEndWorld = world;
+                if (tasks.some(t => !isDone(t))) startFever();
+                else finish();
+            } else {
+                state = 'cruise';
+                later(MODES[mode].gapMs, startQuestion);
+            }
+        });
+    }
+
+    /* ---------- フィーバータイム：みがきのこしを ここで みがく ---------- */
+    function startFever() {
+        state = 'feverIntro';
+        // のこりを5秒のセットに分ける（うちがわが10秒のこっていれば2セット）
+        fever.list = [];
+        for (const t of tasks) {
+            let rest = t.need - t.done;
+            while (rest > 0.05) {
+                fever.list.push({ task: t, sec: Math.min(SET_SEC, rest) });
+                rest -= SET_SEC;
+            }
+        }
+        fever.index = 0;
+        fever.total = fever.list.length;
+        flash('#fff3c2');
+        later(250, () => {
+            world = 'fever';
+            resetParticles();
+            updateHud();
+        });
+        showBanner('fever', 'フィーバータイム！', 'みがきのこした場所を ピカピカにしよう！');
+        speak("フィーバータイム！みがきのこした ばしょを ピカピカにしよう！");
+        jingle(true);
+        later(2800, () => { hideBanner(); nextFeverSpot(); });
+    }
+
+    function nextFeverSpot() {
+        if (fever.index >= fever.list.length) {
+            logCtx('end', []);
+            show('coach', false);
+            showBanner('good', 'ぜんぶ ピカピカ！', 'はみがき かんりょう！');
+            speak("ぜんぶ ピカピカ！");
+            jingle(true);
+            later(2200, () => { hideBanner(); finish(); });
+            return;
+        }
+        const set = fever.list[fever.index++];
+        const t = set.task;
+        fever.task = t;
+        fever.left = set.sec + FEVER_EXTRA;
+        fever.wall = 0;
+        fever.max = fever.left * 3 + 15;   // みがかずに止まってしまったときは、つぎへすすむ
+        document.getElementById('coach-title').innerText = 'ここを みがこう！';
+        document.getElementById('coach-task').innerHTML = taskHtml(t);
+        document.getElementById('coach-sec').innerText = Math.ceil(fever.left);
+        show('coach', true);
+        updateHud();
+        state = 'fever';
+        logCtx('fever', [t.motion], { task: t.id });
+        speak(`${taskLabel(t).replace('・', 'の、').replace('（', 'の、').replace('）', '')}を、${MOTIONS[t.motion].name}。`);
+    }
+
+    function finish() {
+        state = 'result';
+        show('hud', false);
+        let rank, msg;
+        const rate = score / TOTAL_Q;
+        if (rate === 1) rank = '👑 ピカピカマスター';
+        else if (rate >= 0.7) rank = '✨ ハブラシ名人';
+        else if (rate >= 0.4) rank = '🚀 みならいジェット';
+        else rank = '🦠 むしばに注意！';
+
+        msg = quizEndWorld === 'cavity'
+            ? 'むしばの世界からぬけだせなかった…<br>'
+            : 'ピカピカの歯の国にとうちゃく！<br>';
+        msg += cavityCount === 0 ? 'いちども むしばの世界におちなかったよ！' : `むしばの世界におちた回数：${cavityCount}回`;
+
+        const needTotal = tasks.reduce((s, t) => s + t.need, 0);
+        const doneTotal = tasks.reduce((s, t) => s + Math.min(t.done, t.need), 0);
+        const brushSec = Math.round(tasks.reduce((s, t) => s + t.done, 0));
+        const pct = Math.round(doneTotal / needTotal * 100);
+
+        document.getElementById('res-score').innerText = score;
+        document.getElementById('res-total').innerText = ' / ' + TOTAL_Q;
+        document.getElementById('res-rank').innerText = rank;
+        document.getElementById('res-msg').innerHTML = msg;
+        document.getElementById('res-map').innerHTML = mouthSvg(z => zoneColor(zoneRate(z)));
+        document.getElementById('res-brush').innerText = pct;
+        document.getElementById('res-brush-msg').innerHTML =
+            `みがいた時間：${Math.floor(brushSec / 60)}分${brushSec % 60}秒<br>` +
+            (pct >= 100 ? 'ぜんぶの場所を ピカピカにできたよ！' : '色がうすい場所は、つぎはもっと みがこう！');
+
+        later(300, () => show('screen-result', true));
+        speak(`ゴール！${score}もん せいかい！`);
+        sendFeedback(score / TOTAL_Q >= 0.7 ? "O" : "X");
+        saveSession(false);
+    }
+
+    function zoneRate(zone) {
+        const list = tasks.filter(t => t.zones.includes(zone));
+        return list.reduce((s, t) => s + Math.min(t.done, t.need), 0) / list.reduce((s, t) => s + t.need, 0);
+    }
+
+    function zoneColor(rate) {
+        // 0%：むしば色 → 100%：ピカピカの緑
+        const a = [120, 90, 60], b = [125, 255, 176];
+        const t = Math.max(0, Math.min(1, rate));
+        return `rgb(${Math.round(a[0] + (b[0] - a[0]) * t)},${Math.round(a[1] + (b[1] - a[1]) * t)},${Math.round(a[2] + (b[2] - a[2]) * t)})`;
+    }
+
+    function buildRecord() {
+        return {
+            startedAt: startedAt && startedAt.toISOString(),
+            finishedAt: new Date().toISOString(),
+            mode: isSimulated ? 'test' : 'microbit',
+            score,
+            cavityCount,
+            brushTotalSec: Math.round(tasks.reduce((s, t) => s + t.done, 0) * 10) / 10,
+            tasks: tasks.map(t => ({
+                id: t.id,
+                zones: t.zones,
+                place: taskLabel(t),
+                motion: MOTIONS[t.motion].name,
+                needSec: t.need,
+                doneSec: Math.round(t.done * 10) / 10
+            })),
+            answers
+        };
+    }
+
+    function downloadRecord() {
+        const blob = new Blob([JSON.stringify(buildRecord(), null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        const d = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        a.href = URL.createObjectURL(blob);
+        a.download = `hamigaki_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    function backToTitle() {
+        clearTimers();
+        state = 'title';
+        world = 'clean';
+        fork.active = false;
+        run = null;
+        camX = 0;
+        resetParticles();
+        show('screen-result', false);
+        show('hud', false);
+        hideBanner();
+        show('screen-title', true);
+    }
+
+    /* ---------- 画面の表示 ---------- */
+    function updateHud() {
+        bgmSetTrack(world);
+        const chip = document.getElementById('world-chip');
+        chip.classList.toggle('cavity', world === 'cavity');
+        chip.classList.toggle('fever', world === 'fever');
+        chip.innerText = world === 'cavity' ? '🦠 むしばワールド' : world === 'fever' ? '🌈 フィーバータイム' : '🦷 ピカピカワールド';
+        if (world === 'fever') {
+            document.getElementById('q-count-label').innerText = 'のこり';
+            document.getElementById('q-count').innerText = Math.max(0, fever.total - fever.index + (state === 'fever' ? 1 : 0)) + 'セット';
+        } else {
+            document.getElementById('q-count-label').innerText = 'もんだい';
+            document.getElementById('q-count').innerText = Math.min(qIndex + 1, TOTAL_Q) + '/' + TOTAL_Q;
+        }
+        document.getElementById('score').innerText = score;
+    }
+
+    function showBanner(kind, main, sub) {
+        const b = document.getElementById('banner');
+        b.className = kind;
+        document.getElementById('banner-main').innerText = main;
+        document.getElementById('banner-sub').innerHTML = sub;
+        void b.offsetWidth;
+        b.classList.add('show');
+    }
+
+    function hideBanner() { show('banner', false); }
+
+    function flash(color) {
+        const f = document.getElementById('flash');
+        f.style.background = color;
+        f.style.transition = 'opacity .22s';
+        f.style.opacity = 1;
+        later(280, () => {
+            f.style.transition = 'opacity .7s';
+            f.style.opacity = 0;
+        });
+    }
+
+    function updateQuestionUi() {
+        if (state !== 'question') return;
+        if (fork.choice < 0) {
+            const ratio = Math.max(0, Math.min(1, (fork.z - DECIDE_Z) / (SPEED_Q * QTIME)));
+            document.getElementById('dist-fill').style.width = ratio * 100 + '%';
+            document.getElementById('dist-sec').innerText = Math.ceil(ratio * QTIME);
+            for (const side of [0, 1]) {
+                document.getElementById('gauge-' + side).style.width = Math.min(1, current.sel[side] / SELECT_SEC) * 100 + '%';
+                document.getElementById('choice-' + side).classList.toggle('brushing', isBrushing(current.tasks[side].motion));
+            }
+        } else {
+            document.getElementById('dist-fill').style.width = '0%';
+            document.getElementById('dist-sec').innerText = 'GO!';
+            const brushing = isBrushing(current.tasks[fork.choice].motion);
+            const msg = document.getElementById('run-msg');
+            msg.classList.toggle('idle', !brushing);
+            msg.innerText = brushing ? 'いいね！ そのまま みがいて ゲートへ！' : 'みがくと すすむよ！';
+            document.getElementById('choice-' + fork.choice).classList.toggle('brushing', brushing);
+        }
+    }
+
+    /* =========================================================
+       更新
+       ========================================================= */
+    function branchC(sign, z) {
+        if (!fork.active || z <= fork.z) return 0;
+        return sign * Math.min(MAXSPREAD, (z - fork.z) * SPREAD);
+    }
+
+    function updateQuestion(dt) {
+        if (fork.choice < 0) {
+            // えらぶ前：どちらかの磨き方をしていれば、その組み合わせの時間を記録
+            for (const side of [0, 1]) {
+                const t = current.tasks[side];
+                if (isBrushing(t.motion)) {
+                    t.done += dt;
+                    current.sel[side] += dt;
+                }
+            }
+            for (const side of [0, 1]) {
+                if (current.sel[side] >= SELECT_SEC && fork.choice < 0) choose(side);
+            }
+            const move = SPEED_Q * dt;
+            fork.z -= move;
+            travel += move;
+            speed = SPEED_Q;
+            if (fork.choice < 0 && fork.z <= DECIDE_Z) resolve(false, true);
+        } else {
+            // えらんだ後：みがいている間だけ ゲートにむかって進む
+            const t = current.tasks[fork.choice];
+            if (isBrushing(t.motion)) {
+                t.done += dt;
+                run.p += dt / run.need;
+            } else {
+                run.p += dt / run.crawl;
+            }
+            const newZ = Z_PLAYER - GATE_D + run.dist * (1 - Math.min(1, run.p));
+            const move = Math.max(0, fork.z - newZ);
+            fork.z = newZ;
+            travel += move;
+            speed += (move / Math.max(dt, 0.001) - speed) * Math.min(1, dt * 8);
+            if (run.p >= 1) resolve(fork.choice === current.correctSide, false);
+        }
+        updateQuestionUi();
+    }
+
+    function updateFever(dt) {
+        const t = fever.task;
+        const brushing = isBrushing(t.motion);
+        if (brushing) {
+            t.done += dt;
+            fever.left -= dt;
+        }
+        fever.wall += dt;
+        speed += ((brushing ? 14 : 2) - speed) * Math.min(1, dt * 3);
+        travel += speed * dt;
+        document.getElementById('coach').classList.toggle('idle', !brushing);
+        document.getElementById('coach-sec').innerText = Math.max(0, Math.ceil(fever.left));
+
+        if (fever.left <= 0) {
+            state = 'feverSpot';
+            logCtx('feverDone', []);
+            document.getElementById('coach-title').innerText = '✨ ピカピカ！ ✨';
+            tone(1047, 0.15, 'triangle', 0.1);
+            tone(1319, 0.2, 'triangle', 0.1, 0.12);
+            sendFeedback("O");
+            later(1100, nextFeverSpot);
+        } else if (fever.wall > fever.max) {
+            state = 'feverSpot';
+            logCtx('feverSkip', []);
+            later(300, nextFeverSpot);
+        }
+    }
+
+    function update(dt) {
+        time += dt;
+        logSnapshot();
+        updateDebug();
+
+        if (state === 'question') {
+            updateQuestion(dt);
+        } else if (state === 'fever') {
+            updateFever(dt);
+        } else {
+            let target = SPEED_CRUISE;
+            if (state === 'title') target = 6;
+            else if (state === 'resolve') target = lastResultCorrect ? 13 : 6;
+            else if (state === 'feverIntro' || state === 'feverSpot') target = 10;
+            else if (state === 'result') target = 4;
+            speed += (target - speed) * Math.min(1, dt * 3);
+            travel += speed * dt;
+            if (fork.active) fork.z -= speed * dt;
+        }
+
+        // カメラは選んだ道を追いかける
+        let camTarget = 0, tiltTarget = 0;
+        if (fork.active && fork.choice >= 0) {
+            const sign = fork.choice === 0 ? -1 : 1;
+            camTarget = sign * Math.max(0.45, Math.abs(branchC(sign, Z_PLAYER + 1)));
+            tiltTarget = Math.abs(camTarget - camX) > 0.08 ? sign : 0;
+        }
+        camX += (camTarget - camX) * Math.min(1, dt * 5);
+        tilt += (tiltTarget - tilt) * Math.min(1, dt * 6);
+        shake = Math.max(0, shake - dt * 1.5);
+
+        for (const p of particles) {
+            if (p.zw - travel < ZNEAR) respawnParticle(p, false);
+        }
+    }
+
+    function resetParticles() {
+        particles = Array.from({ length: 36 }, () => {
+            const p = {};
+            respawnParticle(p, true);
+            return p;
+        });
+    }
+
+    function respawnParticle(p, anywhere) {
+        p.zw = travel + (anywhere ? ZNEAR + Math.random() * ZFAR : ZFAR * (0.6 + Math.random() * 0.4));
+        p.x = (Math.random() - 0.5) * 10;
+        p.y = 0.4 + Math.random() * 2.8;
+        p.ph = Math.random() * Math.PI * 2;
+    }
+
+    /* =========================================================
+       描画
+       ========================================================= */
+    function resize() {
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        view.W = cv.clientWidth;
+        view.H = cv.clientHeight;
+        cv.width = Math.round(view.W * dpr);
+        cv.height = Math.round(view.H * dpr);
+        C.setTransform(dpr, 0, 0, dpr, 0, 0);
+        view.cx = view.W / 2;
+        view.hz = view.H * 0.42;
+        view.F = 0.42 * Math.min(view.H, view.W * 1.3);
+    }
+
+    function proj(x, y, z) {
+        const s = view.F / z;
+        return { x: view.cx + (x - camX) * s, y: view.hz + (CAM_H - y) * s, s };
+    }
+
+    function mix(a, b, t) {
+        return `rgb(${Math.round(a[0] + (b[0] - a[0]) * t)},${Math.round(a[1] + (b[1] - a[1]) * t)},${Math.round(a[2] + (b[2] - a[2]) * t)})`;
+    }
+
+    function render() {
+        const pal = PALETTES[world];
+        const { W, H } = view;
+        C.save();
+        if (shake > 0) C.translate((Math.random() - 0.5) * 14 * shake, (Math.random() - 0.5) * 14 * shake);
+
+        drawBackground(pal);
+        drawRoad(pal);
+
+        // 奥から順に描くもの
+        const objs = [];
+        const k0 = Math.ceil((travel + 3.2) / TOOTH_SP);  // 手前すぎる歯は大きくなりすぎるので描かない
+        const k1 = Math.floor((travel + ZFAR) / TOOTH_SP);
+        for (let k = k0; k <= k1; k++) {
+            const z = k * TOOTH_SP - travel;
+            objs.push({ z, draw: () => {
+                const xl = branchC(-1, z) - HALF - 0.85;
+                const xr = branchC(1, z) + HALF + 0.85;
+                drawTooth(xl, z, false, k * 4, pal, 1);
+                drawTooth(xr, z, false, k * 4 + 1, pal, 1);
+                drawTooth(xl, z, true, k * 4 + 2, pal, 1);
+                drawTooth(xr, z, true, k * 4 + 3, pal, 1);
+            } });
+        }
+        if (fork.active) {
+            const dz = fork.z + 3.6;
+            if (dz > ZNEAR) objs.push({ z: dz, draw: () => drawTooth(0, dz, false, 7, pal, 1.5) });
+            const gz = fork.z + GATE_D;
+            if (gz > ZNEAR && gz < ZFAR && state === 'question') {
+                objs.push({ z: gz, draw: () => {
+                    drawGate(-1, gz, current.opts[0], fork.choice === 0, pal);
+                    drawGate(1, gz, current.opts[1], fork.choice === 1, pal);
+                } });
+            }
+        }
+        for (const p of particles) {
+            const z = p.zw - travel;
+            if (z > ZNEAR && z < ZFAR) objs.push({ z, draw: () => drawParticle(p, z, pal) });
+        }
+        objs.sort((a, b) => b.z - a.z).forEach(o => o.draw());
+
+        if (speed > 10) drawSpeedLines();
+        drawPlayer();
+
+        // ふちを暗くする
+        const vg = C.createRadialGradient(W / 2, H * 0.45, Math.min(W, H) * 0.35, W / 2, H * 0.45, Math.max(W, H) * 0.75);
+        vg.addColorStop(0, 'rgba(0,0,0,0)');
+        vg.addColorStop(1, world === 'cavity' ? 'rgba(20,40,0,0.7)' : 'rgba(20,0,40,0.55)');
+        C.fillStyle = vg;
+        C.fillRect(-20, -20, W + 40, H + 40);
+        C.restore();
+    }
+
+    function drawBackground(pal) {
+        const { W, H, cx, hz } = view;
+        const sky = C.createLinearGradient(0, 0, 0, hz);
+        sky.addColorStop(0, pal.sky[0]);
+        sky.addColorStop(0.6, pal.sky[1]);
+        sky.addColorStop(1, pal.sky[2]);
+        C.fillStyle = sky;
+        C.fillRect(-20, -20, W + 40, hz + 21);
+
+        for (const s of stars) {
+            const a = 0.25 + 0.5 * (0.5 + 0.5 * Math.sin(time * 2 + s.p));
+            C.fillStyle = pal.star + a + ')';
+            C.fillRect(s.x * W, s.y * hz * 0.85, 2, 2);
+        }
+
+        // のどの奥の光
+        const g = C.createRadialGradient(cx, hz, 0, cx, hz, Math.max(W, H) * 0.4);
+        g.addColorStop(0, pal.glow + '0.9)');
+        g.addColorStop(0.15, pal.glow + '0.35)');
+        g.addColorStop(1, pal.glow + '0)');
+        C.fillStyle = g;
+        C.fillRect(-20, -20, W + 40, H + 40);
+
+        // 歯ぐき（地面）
+        const gum = C.createLinearGradient(0, hz, 0, H);
+        gum.addColorStop(0, pal.gumFar);
+        gum.addColorStop(1, pal.gumNear);
+        C.fillStyle = gum;
+        C.fillRect(-20, hz, W + 40, H - hz + 20);
+    }
+
+    function quad(a, b, c, d) {
+        C.beginPath();
+        C.moveTo(a.x, a.y); C.lineTo(b.x, b.y); C.lineTo(c.x, c.y); C.lineTo(d.x, d.y);
+        C.closePath();
+    }
+
+    function drawRoad(pal) {
+        const branches = fork.active ? [-1, 1] : [0];
+        const step = 0.6;
+
+        // したの道（舌）
+        for (let za = ZFAR; za > ZNEAR; za -= step) {
+            const zb = Math.max(ZNEAR, za - step);
+            const stripe = Math.floor((za + travel) / 1.4) % 2 === 0;
+            const fogT = Math.pow(za / ZFAR, 1.2) * 0.9;
+            const col = mix(stripe ? pal.road1 : pal.road2, pal.fog, fogT);
+            for (const b of branches) {
+                const ca = branchC(b, za), cb = branchC(b, zb);
+                quad(proj(ca - HALF, 0, za), proj(ca + HALF, 0, za), proj(cb + HALF, 0, zb), proj(cb - HALF, 0, zb));
+                C.fillStyle = col;
+                C.strokeStyle = col;
+                C.lineWidth = 1;
+                C.fill();
+                C.stroke();
+                if (stripe) {
+                    const pa = proj(ca, 0, za), pb = proj(cb, 0, zb);
+                    C.strokeStyle = pal.groove;
+                    C.lineWidth = Math.max(1, 0.06 * pb.s);
+                    C.beginPath(); C.moveTo(pa.x, pa.y); C.lineTo(pb.x, pb.y); C.stroke();
+                }
+            }
+        }
+
+        // わかれ道のあいだの歯ぐき
+        if (fork.active) {
+            const zStart = Math.max(ZNEAR, fork.z + HALF / SPREAD);
+            if (zStart < ZFAR) {
+                C.beginPath();
+                for (let z = zStart; z <= ZFAR; z += 1) {
+                    const p = proj(branchC(-1, z) + HALF, 0, z);
+                    z === zStart ? C.moveTo(p.x, p.y) : C.lineTo(p.x, p.y);
+                }
+                for (let z = ZFAR; z >= zStart; z -= 1) {
+                    const p = proj(branchC(1, z) - HALF, 0, z);
+                    C.lineTo(p.x, p.y);
+                }
+                C.closePath();
+                C.fillStyle = pal.divider;
+                C.fill();
+            }
+        }
+
+        // ネオンのふち
+        for (const b of branches) {
+            for (const side of [-1, 1]) {
+                C.beginPath();
+                for (let z = ZFAR; z >= ZNEAR; z -= 0.8) {
+                    // 2本の道が重なっている所では、内側のふちは描かない
+                    if (b !== 0 && side === -b && Math.abs(branchC(b, z)) < HALF) break;
+                    const p = proj(branchC(b, z) + side * HALF, 0, z);
+                    z === ZFAR ? C.moveTo(p.x, p.y) : C.lineTo(p.x, p.y);
+                }
+                C.strokeStyle = pal.neon;
+                C.globalAlpha = 0.25;
+                C.lineWidth = 9;
+                C.stroke();
+                C.globalAlpha = 1;
+                C.lineWidth = 2.5;
+                C.stroke();
+            }
+        }
+    }
+
+    function drawTooth(x, z, upper, seed, pal, size) {
+        const p = proj(x, upper ? CEIL : 0, z);
+        const w = 1.25 * p.s * size, h = 1.35 * p.s * size;
+        if (w < 1.5) return;
+        C.save();
+        C.globalAlpha = Math.max(0, Math.min(1, (1 - z / ZFAR) * 1.6));
+        C.translate(p.x, p.y);
+        if (upper) C.scale(1, -1);
+
+        // 歯ぐき
+        C.fillStyle = pal.gum;
+        C.beginPath();
+        C.ellipse(0, 0, w * 0.62, h * 0.14, 0, 0, Math.PI * 2);
+        C.fill();
+
+        // 歯（奥歯のかたち）
+        const g = C.createLinearGradient(-w / 2, 0, w / 2, 0);
+        g.addColorStop(0, pal.tooth[1]);
+        g.addColorStop(0.35, pal.tooth[0]);
+        g.addColorStop(1, pal.tooth[1]);
+        C.fillStyle = g;
+        C.strokeStyle = pal.toothEdge;
+        C.lineWidth = Math.max(1, w * 0.03);
+        C.beginPath();
+        C.moveTo(-w * 0.42, 0);
+        C.bezierCurveTo(-w * 0.5, -h * 0.4, -w * 0.52, -h * 0.85, -w * 0.3, -h);
+        C.quadraticCurveTo(-w * 0.12, -h * 1.02, 0, -h * 0.9);
+        C.quadraticCurveTo(w * 0.12, -h * 1.02, w * 0.3, -h);
+        C.bezierCurveTo(w * 0.52, -h * 0.85, w * 0.5, -h * 0.4, w * 0.42, 0);
+        C.closePath();
+        C.fill();
+        C.stroke();
+
+        if (world === 'cavity') {
+            // むしばの穴としみ
+            const off = ((seed * 37) % 7 - 3) / 10;
+            C.fillStyle = 'rgba(60, 40, 15, 0.55)';
+            C.beginPath();
+            C.ellipse(-off * w, -h * 0.35, w * 0.2, h * 0.12, 0, 0, Math.PI * 2);
+            C.fill();
+            C.fillStyle = '#1a1006';
+            C.beginPath();
+            C.ellipse(off * w, -h * 0.68, w * 0.13, h * 0.1, 0.3, 0, Math.PI * 2);
+            C.fill();
+        } else {
+            // つやつやのハイライト
+            C.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            C.beginPath();
+            C.ellipse(-w * 0.2, -h * 0.6, w * 0.06, h * 0.22, 0.15, 0, Math.PI * 2);
+            C.fill();
+        }
+        C.restore();
+    }
+
+    function drawGate(sign, z, label, picked, pal) {
+        const c = branchC(sign, z);
+        const color = picked ? '#ffe45f' : pal.gate;
+        const bl = proj(c - HALF * 0.9, 0, z), br = proj(c + HALF * 0.9, 0, z);
+        const tl = proj(c - HALF * 0.9, 2.3, z), tr = proj(c + HALF * 0.9, 2.3, z);
+        const s = bl.s;
+
+        C.save();
+        C.strokeStyle = color;
+        C.lineCap = 'round';
+        C.globalAlpha = 0.3;
+        C.lineWidth = Math.max(3, 0.3 * s);
+        C.beginPath();
+        C.moveTo(bl.x, bl.y); C.lineTo(tl.x, tl.y); C.lineTo(tr.x, tr.y); C.lineTo(br.x, br.y);
+        C.stroke();
+        C.globalAlpha = 1;
+        C.lineWidth = Math.max(1.5, 0.1 * s);
+        C.stroke();
+
+        // 看板
+        const sc = proj(c, 2.85, z);
+        const bw = 2.1 * s, bh = 0.62 * s;
+        if (bw > 8) {
+            C.fillStyle = 'rgba(10, 8, 40, 0.85)';
+            C.strokeStyle = color;
+            C.lineWidth = Math.max(1, 0.05 * s);
+            C.beginPath();
+            C.roundRect(sc.x - bw / 2, sc.y - bh / 2, bw, bh, bh * 0.25);
+            C.fill();
+            C.stroke();
+            let fs = 0.36 * s;
+            C.font = `900 ${fs}px 'M PLUS Rounded 1c', sans-serif`;
+            const tw = C.measureText(label).width;
+            if (tw > bw * 0.88) {
+                fs *= bw * 0.88 / tw;
+                C.font = `900 ${fs}px 'M PLUS Rounded 1c', sans-serif`;
+            }
+            C.fillStyle = '#fff';
+            C.textAlign = 'center';
+            C.textBaseline = 'middle';
+            C.fillText(label, sc.x, sc.y + fs * 0.05);
+        }
+        C.restore();
+    }
+
+    function drawParticle(p, z, pal) {
+        const pr = proj(p.x, p.y + Math.sin(time * 2 + p.ph) * 0.2, z);
+        const a = Math.max(0, Math.min(1, (1 - z / ZFAR) * 1.5));
+        if (world === 'cavity' || world === 'fever') {
+            const fs = (world === 'cavity' ? 0.75 : 0.55) * pr.s;
+            if (fs < 4) return;
+            C.globalAlpha = a;
+            C.font = `${fs}px sans-serif`;
+            C.textAlign = 'center';
+            C.textBaseline = 'middle';
+            C.fillText(world === 'cavity' ? '🦠' : '✨', pr.x, pr.y);
+            C.globalAlpha = 1;
+        } else {
+            const r = 0.09 * pr.s;
+            if (r < 0.8) return;
+            C.strokeStyle = `rgba(200, 250, 255, ${a * 0.8})`;
+            C.lineWidth = Math.max(1, r * 0.25);
+            C.beginPath();
+            C.arc(pr.x, pr.y, r, 0, Math.PI * 2);
+            C.stroke();
+        }
+    }
+
+    function drawSpeedLines() {
+        const { W, H, cx, hz } = view;
+        const n = Math.round((speed - 10) * 2);
+        C.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+        C.lineWidth = 2;
+        C.beginPath();
+        for (let i = 0; i < n; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const r1 = Math.max(W, H) * (0.3 + Math.random() * 0.3);
+            const r2 = r1 + Math.max(W, H) * 0.15;
+            C.moveTo(cx + Math.cos(ang) * r1, hz + Math.sin(ang) * r1);
+            C.lineTo(cx + Math.cos(ang) * r2, hz + Math.sin(ang) * r2);
+        }
+        C.stroke();
+    }
+
+    // 歯ブラシに乗った主人公（うしろ姿）
+    function drawPlayer() {
+        const { W, H } = view;
+        const k = Math.min(H, W * 1.25) / 640;
+        const bob = Math.sin(time * 7) * 2 * k;
+        C.save();
+        C.translate(view.cx + tilt * 40 * k, H * 0.93 + bob);
+        C.rotate(tilt * 0.18);
+        C.scale(k, k);
+
+        // ジェットの炎
+        const fl = 26 + Math.sin(time * 40) * 6 + (speed > 10 ? 20 : 0);
+        for (const jx of [-17, 17]) {
+            const g = C.createRadialGradient(jx, 4, 1, jx, 4 + fl * 0.4, fl);
+            g.addColorStop(0, 'rgba(255,255,255,0.95)');
+            g.addColorStop(0.35, 'rgba(110,240,255,0.8)');
+            g.addColorStop(1, 'rgba(110,240,255,0)');
+            C.fillStyle = g;
+            C.beginPath();
+            C.ellipse(jx, 4 + fl * 0.35, 10, fl * 0.65, 0, 0, Math.PI * 2);
+            C.fill();
+        }
+
+        // ボード（歯ブラシ）
+        const boardPath = () => {
+            C.beginPath();
+            C.moveTo(-34, 0); C.lineTo(34, 0); C.lineTo(19, -140);
+            C.quadraticCurveTo(26, -150, 24, -160); C.lineTo(24, -205);
+            C.quadraticCurveTo(0, -218, -24, -205); C.lineTo(-24, -160);
+            C.quadraticCurveTo(-26, -150, -19, -140); C.closePath();
+        };
+        C.save();
+        C.translate(0, 7);
+        boardPath();
+        C.fillStyle = '#1d2747';
+        C.fill();
+        C.restore();
+
+        const bg = C.createLinearGradient(-34, 0, 34, 0);
+        bg.addColorStop(0, '#7d8fb3');
+        bg.addColorStop(0.5, '#f4f8ff');
+        bg.addColorStop(1, '#6f82a8');
+        boardPath();
+        C.fillStyle = bg;
+        C.strokeStyle = '#1d2747';
+        C.lineWidth = 3;
+        C.fill();
+        C.stroke();
+
+        C.strokeStyle = '#5ff5ff';
+        C.lineWidth = 3;
+        C.beginPath();
+        C.moveTo(-27, -6); C.lineTo(-15, -135);
+        C.moveTo(27, -6); C.lineTo(15, -135);
+        C.stroke();
+
+        // 光るブラシの毛
+        const glow = C.createRadialGradient(0, -195, 4, 0, -195, 50);
+        glow.addColorStop(0, 'rgba(110,240,255,0.6)');
+        glow.addColorStop(1, 'rgba(110,240,255,0)');
+        C.fillStyle = glow;
+        C.beginPath();
+        C.ellipse(0, -195, 50, 38, 0, 0, Math.PI * 2);
+        C.fill();
+        for (let row = 0; row < 5; row++) {
+            const y = -200 + row * 8;
+            for (let col = -2; col <= 2; col++) {
+                const x = col * 8.5;
+                const rg = C.createLinearGradient(0, y - 22, 0, y);
+                rg.addColorStop(0, '#ffffff');
+                rg.addColorStop(0.4, '#8ff7ff');
+                rg.addColorStop(1, '#1aa7c9');
+                C.fillStyle = rg;
+                C.beginPath();
+                C.roundRect(x - 2.8, y - 22, 5.6, 22, 2.5);
+                C.fill();
+            }
+        }
+
+        // 主人公
+        const navy = '#24305e';
+        C.lineCap = 'round';
+        C.lineJoin = 'round';
+        // 足
+        C.strokeStyle = navy;
+        C.lineWidth = 11;
+        C.beginPath();
+        C.moveTo(-8, -80); C.lineTo(-17, -60); C.lineTo(-18, -44);
+        C.moveTo(8, -80); C.lineTo(17, -60); C.lineTo(18, -44);
+        C.stroke();
+        C.fillStyle = '#ff9a3c';
+        for (const kx of [-17, 17]) { C.beginPath(); C.arc(kx, -60, 4.5, 0, Math.PI * 2); C.fill(); }
+        C.fillStyle = '#dfe6f2';
+        C.strokeStyle = navy;
+        C.lineWidth = 2;
+        for (const fx of [-19, 19]) { C.beginPath(); C.ellipse(fx, -41, 9, 5.5, 0, 0, Math.PI * 2); C.fill(); C.stroke(); }
+
+        // うで
+        const sway = Math.sin(time * 3) * 3;
+        C.strokeStyle = '#c9d6f0';
+        C.lineWidth = 8;
+        C.beginPath();
+        C.moveTo(-16, -113); C.lineTo(-30, -101 + sway); C.lineTo(-41, -90 + sway);
+        C.moveTo(16, -113); C.lineTo(30, -101 - sway); C.lineTo(41, -90 - sway);
+        C.stroke();
+        C.fillStyle = navy;
+        C.beginPath(); C.arc(-42, -89 + sway, 5, 0, Math.PI * 2); C.fill();
+        C.beginPath(); C.arc(42, -89 - sway, 5, 0, Math.PI * 2); C.fill();
+
+        // 体
+        const tg = C.createLinearGradient(-18, 0, 18, 0);
+        tg.addColorStop(0, '#9fb3d9');
+        tg.addColorStop(0.5, '#f2f6ff');
+        tg.addColorStop(1, '#9fb3d9');
+        C.fillStyle = tg;
+        C.strokeStyle = navy;
+        C.lineWidth = 2.5;
+        C.beginPath();
+        C.moveTo(-12, -80); C.lineTo(12, -80); C.lineTo(18, -114);
+        C.quadraticCurveTo(0, -122, -18, -114); C.closePath();
+        C.fill();
+        C.stroke();
+        C.fillStyle = '#ff8a2a';
+        C.fillRect(-13, -86, 26, 5);
+        // せなかのジェットパック
+        C.fillStyle = '#34406b';
+        C.beginPath(); C.roundRect(-10, -114, 20, 24, 5); C.fill();
+        C.fillStyle = '#5ff5ff';
+        for (const lx of [-5, 5]) { C.beginPath(); C.arc(lx, -97, 2.6, 0, Math.PI * 2); C.fill(); }
+
+        // 頭（うしろから見た髪）
+        C.fillStyle = '#2fc7c0';
+        C.beginPath(); C.arc(0, -133, 12.5, 0, Math.PI * 2); C.fill();
+        C.fillStyle = '#7ff0e6';
+        C.beginPath(); C.arc(-4, -138, 5, 0, Math.PI * 2); C.fill();
+        // ゴーグルのベルト
+        C.strokeStyle = '#1d2747';
+        C.lineWidth = 4;
+        C.beginPath(); C.moveTo(-12, -135); C.quadraticCurveTo(0, -130, 12, -135); C.stroke();
+        C.fillStyle = '#ff9a3c';
+        C.fillRect(-3, -135, 6, 4);
+        // ポニーテール
+        const hs = Math.sin(time * 9) * 4;
+        C.fillStyle = '#2fc7c0';
+        C.beginPath();
+        C.moveTo(-4, -146);
+        C.bezierCurveTo(10, -162, 26 + hs, -152, 32 + hs, -126);
+        C.bezierCurveTo(20 + hs, -138, 8, -141, 4, -142);
+        C.closePath();
+        C.fill();
+        C.fillStyle = '#ff9a3c';
+        C.beginPath(); C.arc(0, -145, 3, 0, Math.PI * 2); C.fill();
+
+        C.restore();
+    }
+
+    /* =========================================================
+       BGM（Mキー / 🔊ボタン）
+       ========================================================= */
+    // 8分音符ごとのメロディ（root からの半音。null は休み）と 1小節ごとのベース
+    const BGM_TRACKS = {
+        clean:  { bpm: 120, root: 72, roots: [0, 5, 7, 0],
+                  lead: [0, 4, 7, 12, 11, 7, 9, null, 5, 9, 12, 9, 7, null, 4, null, 0, 4, 7, 12, 14, 12, 11, 7, 9, 7, 5, 4, 2, null, 0, null] },
+        cavity: { bpm: 104, root: 69, roots: [0, -4, -2, 0],
+                  lead: [0, null, 3, null, 7, null, 6, null, 5, null, 3, null, 2, null, 3, null, 0, null, 3, null, 7, null, 10, null, 8, null, 7, null, 3, null, null, null] },
+        fever:  { bpm: 144, root: 74, roots: [0, 5, 7, 5],
+                  lead: [12, 7, 12, 16, 19, 16, 12, 7, 14, 9, 14, 17, 21, 17, 14, 9, 12, 7, 12, 16, 19, 16, 24, 19, 17, 16, 14, 12, 14, null, 12, null] }
+    };
+    const bgm = { on: true, track: null, step: 0, nextT: 0, timer: null, gain: null };
+
+    function bgmStart() {
+        if (!audioCtx) return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        if (!bgm.gain) {
+            bgm.gain = audioCtx.createGain();
+            bgm.gain.gain.value = bgm.on ? 0.5 : 0;
+            bgm.gain.connect(audioCtx.destination);
+        }
+        bgmSetTrack(world);
+        if (!bgm.timer) bgm.timer = setInterval(bgmSchedule, 40);
+    }
+
+    function bgmSetTrack(name) {
+        const track = BGM_TRACKS[name] || BGM_TRACKS.clean;
+        if (bgm.track === track) return;
+        bgm.track = track;
+        bgm.step = 0;
+    }
+
+    function bgmNote(freq, dur, type, vol, at) {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, at);
+        g.gain.setValueAtTime(vol, at);
+        g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+        osc.connect(g).connect(bgm.gain);
+        osc.start(at);
+        osc.stop(at + dur + 0.02);
+    }
+
+    function bgmSchedule() {
+        if (!audioCtx || !bgm.track || !bgm.gain) return;
+        const tr = bgm.track;
+        const step = 60 / tr.bpm / 2;
+        const midi = n => 440 * Math.pow(2, (n - 69) / 12);
+        if (bgm.nextT < audioCtx.currentTime) bgm.nextT = audioCtx.currentTime + 0.05;
+        while (bgm.nextT < audioCtx.currentTime + 0.15) {
+            const i = bgm.step % tr.lead.length;
+            const n = tr.lead[i];
+            if (n !== null) bgmNote(midi(tr.root + n), step * 0.9, 'square', 0.025, bgm.nextT);
+            if (i % 2 === 0) {
+                const r = tr.roots[Math.floor(i / 8) % tr.roots.length];
+                bgmNote(midi(tr.root - 24 + r + (i % 4 === 2 ? 12 : 0)), step * 1.7, 'triangle', 0.09, bgm.nextT);
+            }
+            bgm.nextT += step;
+            bgm.step++;
+        }
+    }
+
+    // よみあげ中は BGM を小さくする
+    function bgmDuck(on) {
+        if (!bgm.gain || !bgm.on) return;
+        bgm.gain.gain.setTargetAtTime(on ? 0.15 : 0.5, audioCtx.currentTime, 0.08);
+    }
+
+    function toggleBgm() {
+        bgm.on = !bgm.on;
+        if (bgm.gain) bgm.gain.gain.setTargetAtTime(bgm.on ? 0.5 : 0, audioCtx.currentTime, 0.05);
+        const btn = document.getElementById('bgm-btn');
+        btn.innerText = bgm.on ? '🔊' : '🔇';
+        btn.classList.toggle('off', !bgm.on);
+    }
+
+    /* =========================================================
+       判定チェック（Dキー）：micro:bit の信号と「みがいている」判定を見る
+       ========================================================= */
+    let debugEl = null;
+    let debugNext = 0;
+    const recentSignals = [];
+
+    function toggleDebug() {
+        if (!debugEl) {
+            debugEl = document.createElement('div');
+            debugEl.id = 'debug';
+            document.getElementById('game').appendChild(debugEl);
+            updateDebug(true);
+        } else {
+            debugEl.remove();
+            debugEl = null;
+        }
+    }
+
+    function updateDebug(force = false) {
+        if (!debugEl) return;
+        const t = performance.now();
+        if (!force && t < debugNext) return;   // 1秒に10回だけ書きかえる
+        debugNext = t + 100;
+        const rows = MOTIONS.map((m, i) => {
+            const left = Math.max(0, motionUntil[i] - time);
+            return `<div class="dm"><span>${m.icon} ${m.name}</span><div class="db"><i style="width:${left / HOLD_SEC * 100}%"></i></div><span>${isBrushing(i) ? 'ON' : '-'}</span></div>`;
+        }).join('');
+        const sig = recentSignals.slice(-8).reverse()
+            .map(s => `${(time - s.t).toFixed(1).padStart(5)}s前  "${s.code}"${/^[0-3]$/.test(s.code) ? '' : '  ← むし'}`).join('\n');
+        debugEl.innerHTML = `<b>判定チェック</b>（Dでとじる）<br>` +
+            `モード：${isSimulated ? 'テスト' : 'micro:bit'}　じょうたい：${state}<br>${rows}` +
+            `<div class="dlog">${sig || 'まだ 信号が きていません'}</div>`;
+    }
+
+    /* =========================================================
+       きろく（ブラウザの中に のこす）
+       ========================================================= */
+    const LOG_KEY = 'hamigaki-sessions';
+    const LOG_MAX = 20;
+    let session = null;
+    let currentSessionId = null;
+    let snapNext = 0;
+
+    function logStart() {
+        session = {
+            id: 's' + Date.now(),
+            startedAt: new Date().toISOString(),
+            mode: isSimulated ? 'test' : 'microbit',
+            signals: [],     // [秒, 信号]
+            events: [],      // [秒, しゅるい, 磨き方, くわしく]
+            snapshots: []    // [秒, じょうたい, みがいている磨き方]
+        };
+        currentSessionId = session.id;
+        snapNext = 0;
+    }
+
+    function logSignal(code) {
+        recentSignals.push({ t: time, code });
+        if (recentSignals.length > 50) recentSignals.shift();
+        if (session && session.signals.length < 20000) session.signals.push([round1(time), code]);
+    }
+
+    function logCtx(type, motions, extra = {}) {
+        if (session) session.events.push([round1(time), type, motions, extra]);
+    }
+
+    // 0.5秒ごとに「いま何みがきをしているか」を のこす
+    function logSnapshot() {
+        if (!session || state === 'title' || time < snapNext) return;
+        snapNext = time + 0.5;
+        const on = [0, 1, 2, 3].filter(isBrushing);
+        session.snapshots.push([round1(time), state, on]);
+    }
+
+    function round1(x) { return Math.round(x * 10) / 10; }
+
+    function loadSessions() {
+        try { return JSON.parse(localStorage.getItem(LOG_KEY)) || []; } catch (e) { return []; }
+    }
+
+    function saveSession(partial) {
+        if (!session) return;
+        const record = { ...buildRecord(), id: session.id, partial, log: session };
+        const list = loadSessions().filter(r => r.id !== session.id);
+        list.unshift(record);
+        list.length = Math.min(list.length, LOG_MAX);
+        try {
+            localStorage.setItem(LOG_KEY, JSON.stringify(list));
+        } catch (e) {
+            // 容量オーバーのときは こまかい記録を けして 保存する
+            list.forEach(r => { if (r.log) { r.log.signals = []; r.log.snapshots = []; } });
+            try { localStorage.setItem(LOG_KEY, JSON.stringify(list.slice(0, 10))); } catch (e2) { console.error(e2); }
+        }
+    }
+
+    // とちゅうで とじたときも のこす
+    window.addEventListener('beforeunload', () => {
+        if (session && state !== 'title' && state !== 'result') saveSession(true);
+    });
+
+    function openLog(id) {
+        const list = loadSessions();
+        const box = document.getElementById('log-list');
+        box.innerHTML = list.length ? '' : '<div style="text-align:center;opacity:.7">まだ きろくが ありません</div>';
+        list.forEach(r => {
+            const d = new Date(r.startedAt || r.finishedAt);
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            item.dataset.id = r.id;
+            item.innerHTML = `<span>${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` +
+                `　${r.mode === 'test' ? 'テスト' : 'micro:bit'}${r.partial ? '（とちゅう）' : ''}</span>` +
+                `<span>⭐ ${r.score}　みがき ${Math.floor(r.brushTotalSec / 60)}分${Math.round(r.brushTotalSec % 60)}秒</span>`;
+            item.onclick = () => showLogDetail(r);
+            box.appendChild(item);
+        });
+        show('log-detail', false);
+        const target = list.find(r => r.id === id);
+        if (target) showLogDetail(target);
+        show('screen-log', true);
+    }
+
+    function showLogDetail(r) {
+        document.querySelectorAll('.log-item').forEach(el => el.classList.toggle('sel', el.dataset.id === r.id));
+        const rows = (r.tasks || []).map(t =>
+            `<tr><td>${t.place}</td><td>${t.motion}</td><td class="n">${t.doneSec} / ${t.needSec}秒</td></tr>`).join('');
+        const correct = (r.answers || []).filter(a => a.correct).length;
+        const el = document.getElementById('log-detail');
+        el.innerHTML = `クイズ：${correct} / ${(r.answers || []).length} せいかい　むしばワールド：${r.cavityCount}回` +
+            `<table>${rows}</table>` +
+            `<div class="btns" style="margin-top:10px"><button class="sub" id="log-dl">JSONで保存</button></div>`;
+        document.getElementById('log-dl').onclick = () => {
+            const blob = new Blob([JSON.stringify(r, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `hamigaki_${r.id}.json`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        };
+        show('log-detail', true);
+    }
+
+    function closeLog() {
+        show('screen-log', false);
+    }
+
+    /* =========================================================
+       ループ
+       ========================================================= */
+    let lastT = performance.now();
+    function loop(now) {
+        const dt = Math.min(0.05, (now - lastT) / 1000);
+        lastT = now;
+        update(dt);
+        render();
+        requestAnimationFrame(loop);
+    }
+
+    // FAST / BASIC の切りかえ
+    function setMode(m) {
+        mode = m;
+        try { localStorage.setItem('hamigaki-mode', m); } catch (e) {}
+        document.querySelectorAll('#mode-pick button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+    }
+    document.querySelectorAll('#mode-pick button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+    setMode(mode);
+
+    window.addEventListener('resize', resize);
+    resize();
+    resetParticles();
+    requestAnimationFrame(loop);
+</script>
+</body>
+</html>

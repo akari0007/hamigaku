@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ハミガキ イングリッシュ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg: #12062e;
+        --ink: #fff;
+        --muted: #c9b8ff;
+        --pink: #ff4fa3;
+        --cyan: #29e6ff;
+        --yellow: #ffe14d;
+        --m0: #ff8a3d;
+        --m1: #29b6ff;
+        --m2: #b46bff;
+        --m3: #3ee07a;
+        --display: 'Dela Gothic One', 'M PLUS Rounded 1c', sans-serif;
+        --gut: clamp(10px, 2vw, 28px);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+        font-family: 'M PLUS Rounded 1c', system-ui, sans-serif; font-weight: 700;
+        color: var(--ink); background: var(--bg); overflow: hidden;
+        user-select: none; -webkit-user-select: none; touch-action: manipulation;
+    }
+    button, input { font: inherit; color: inherit; }
+    .hidden { display: none !important; }
+
+    /* ===== ステージ ===== */
+    #stage { position: fixed; inset: 0; overflow: hidden; background: radial-gradient(ellipse at 50% 0%, #4b1a8f 0%, #22094f 45%, var(--bg) 80%); }
+    .beam {
+        position: absolute; top: -10%; width: 26vw; height: 120%; transform-origin: 50% 0;
+        background: linear-gradient(180deg, rgba(255, 255, 255, .28), rgba(255, 255, 255, 0) 80%);
+        clip-path: polygon(45% 0, 55% 0, 100% 100%, 0 100%); mix-blend-mode: screen; opacity: .55;
+    }
+    .beam.b1 { left: 8%; background: linear-gradient(180deg, rgba(255, 79, 163, .55), transparent 80%); animation: sweep 4s ease-in-out infinite alternate; }
+    .beam.b2 { left: 37%; background: linear-gradient(180deg, rgba(41, 230, 255, .5), transparent 80%); animation: sweep 5s ease-in-out infinite alternate-reverse; }
+    .beam.b3 { left: 66%; background: linear-gradient(180deg, rgba(255, 225, 77, .45), transparent 80%); animation: sweep 3.6s ease-in-out infinite alternate; }
+    @keyframes sweep { from { transform: rotate(-22deg); } to { transform: rotate(22deg); } }
+    #floor {
+        position: absolute; left: -20%; right: -20%; bottom: -8%; height: 52%;
+        transform: perspective(600px) rotateX(58deg); transform-origin: 50% 100%;
+        background:
+            repeating-linear-gradient(90deg, rgba(255, 255, 255, .08) 0 2px, transparent 2px 9%),
+            repeating-linear-gradient(0deg, rgba(255, 255, 255, .08) 0 2px, transparent 2px 14%),
+            linear-gradient(180deg, #2a0f5c, #160634);
+    }
+    #floor::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 30%, rgba(255, 79, 163, .35), transparent 60%); }
+    body.beat #floor::after { animation: floorBeat .3s ease-out; }
+    @keyframes floorBeat { 0% { opacity: 1.6; filter: brightness(1.8); } 100% { opacity: 1; } }
+
+    #app {
+        position: relative; z-index: 2; height: 100dvh;
+        display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto;
+        gap: clamp(8px, 1.4vh, 14px);
+        padding: max(12px, env(safe-area-inset-top)) var(--gut) max(12px, env(safe-area-inset-bottom));
+    }
+
+    /* ===== 上のHUD ===== */
+    #hud { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .logo { font-family: var(--display); font-size: clamp(18px, 2vw, 26px); line-height: 1; margin-right: auto; text-shadow: 0 0 18px var(--pink); }
+    .logo small { display: block; font-family: 'M PLUS Rounded 1c'; font-size: 11px; color: var(--muted); letter-spacing: .2em; }
+    .chip { padding: 8px 16px; border-radius: 999px; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .2); display: flex; align-items: baseline; gap: 8px; }
+    .chip span { font-size: 11px; color: var(--muted); }
+    .chip b { font-family: var(--display); font-weight: 400; font-size: 22px; }
+    #lives { letter-spacing: 2px; font-size: 20px; }
+    #lives .lost { opacity: .25; filter: grayscale(1); }
+    .icon-btn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .08); cursor: pointer; }
+
+    /* ===== まんなか ===== */
+    #center { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr); align-items: end; gap: 12px; min-height: 0; }
+    .actor { position: relative; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; min-height: 0; }
+    .actor svg { height: min(100%, 46vh); width: auto; max-width: 100%; overflow: visible; }
+    .name-tag { font-family: var(--display); font-size: 14px; padding: 4px 14px; border-radius: 999px; margin-top: 6px; }
+    #dj .name-tag { background: var(--pink); }
+    #dancer .name-tag { background: var(--cyan); color: #12062e; }
+    #bubble {
+        position: absolute; top: 4%; left: 50%; transform: translateX(-50%); width: max-content; max-width: 100%;
+        padding: 10px 16px; border-radius: 18px; background: #fff; color: #2a0f5c; font-size: clamp(14px, 1.5vw, 18px); text-align: center;
+    }
+    #bubble::after { content: ""; position: absolute; bottom: -10px; left: 50%; margin-left: -10px; border: 10px solid transparent; border-top-color: #fff; border-bottom: 0; }
+    .record { transform-box: fill-box; transform-origin: center; animation: spin 1.2s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .bodybox { transform-box: fill-box; transform-origin: 50% 100%; }
+    .pose-0 { animation: p0 .5s ease-out; }
+    .pose-1 { animation: p1 .5s ease-out; }
+    .pose-2 { animation: p2 .55s ease-out; }
+    .pose-3 { animation: p3 .5s ease-out; }
+    .stumble { animation: stumble .6s ease-out; }
+    .idle { animation: idle .6s ease-in-out infinite; }
+    @keyframes idle { 50% { transform: translateY(-3%) scaleY(.97); } }
+    @keyframes p0 { 30% { transform: translateY(-28%) scaleY(1.06); } 60% { transform: translateY(0) scaleY(.88); } }
+    @keyframes p1 { 25% { transform: translateX(-26%) skewX(12deg); } 60% { transform: translateX(26%) skewX(-12deg); } }
+    @keyframes p2 { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+    @keyframes p3 { 40% { transform: rotate(-28deg) scaleY(.84); } }
+    @keyframes stumble { 20% { transform: rotate(18deg) translateX(8%); } 45% { transform: rotate(-14deg); } 70% { transform: rotate(8deg); } }
+
+    /* じゅんばん */
+    #seq-panel { align-self: center; padding: 14px; border-radius: 24px; background: rgba(10, 2, 30, .6); border: 1px solid rgba(255, 255, 255, .18); backdrop-filter: blur(6px); }
+    #phase { font-family: var(--display); font-size: clamp(18px, 2vw, 26px); text-align: center; margin-bottom: 4px; }
+    #phase-sub { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 12px; min-height: 1.4em; }
+    #seq { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+    .card {
+        width: clamp(40px, 4vw, 56px); aspect-ratio: 3 / 4; border-radius: 12px; display: grid; place-items: center;
+        font-size: clamp(20px, 2.2vw, 28px); font-weight: 800; background: rgba(255, 255, 255, .08); border: 2px solid rgba(255, 255, 255, .25);
+        transition: transform .15s;
+    }
+    .card.show { background: var(--c); border-color: #fff; box-shadow: 0 0 18px var(--c); transform: scale(1.1); }
+    .card.past { background: color-mix(in srgb, var(--c) 45%, transparent); }
+    .card.hide { color: rgba(255, 255, 255, .5); }
+    .card.ok { background: var(--m3); border-color: #fff; }
+    .card.ng { background: #ff3355; border-color: #fff; animation: shake .4s; }
+    .card.next { border-color: var(--yellow); box-shadow: 0 0 0 3px rgba(255, 225, 77, .4); }
+    @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+    #reverse-tag { margin: 10px auto 0; width: max-content; padding: 4px 14px; border-radius: 999px; background: var(--yellow); color: #2a0f5c; font-size: 13px; }
+
+    /* ===== パッド ===== */
+    #pads { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(8px, 1.2vw, 16px); }
+    .pad {
+        position: relative; overflow: hidden; cursor: pointer; touch-action: none;
+        display: flex; align-items: center; justify-content: center; gap: 12px;
+        padding: clamp(12px, 2vh, 22px) 10px; border-radius: 22px;
+        background: color-mix(in srgb, var(--c) 18%, rgba(10, 2, 30, .7)); border: 3px solid color-mix(in srgb, var(--c) 60%, transparent);
+        transition: transform .1s, box-shadow .1s, background .1s;
+    }
+    .pad i { font-style: normal; width: clamp(44px, 4.4vw, 60px); aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: #12062e; font-size: clamp(24px, 2.6vw, 34px); font-weight: 800; }
+    .pad b { font-size: clamp(14px, 1.5vw, 19px); display: block; }
+    .pad small { font-size: 11px; color: var(--muted); }
+    .pad .hold { position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--h, 0) * 100%); background: rgba(255, 255, 255, .32); pointer-events: none; }
+    .pad.on { border-color: #fff; }
+    .pad.lit { background: var(--c); transform: translateY(-6px) scale(1.03); box-shadow: 0 0 40px var(--c), 0 0 0 4px #fff; }
+    .pad.lit i { background: #fff; }
+    body:not(.sim) .pad small { display: none; }
+    #foot { text-align: center; font-size: 12px; color: var(--muted); }
+
+    /* ===== 演出 ===== */
+    #big {
+        position: fixed; left: 50%; top: 40%; z-index: 30; transform: translate(-50%, -50%); pointer-events: none;
+        font-family: var(--display); font-size: clamp(40px, 7vw, 96px); white-space: nowrap; text-align: center;
+        text-shadow: 0 0 30px var(--pink), 0 6px 0 #2a0f5c; opacity: 0;
+    }
+    #big.go { animation: big 1.4s ease-out forwards; }
+    @keyframes big { 0% { opacity: 0; transform: translate(-50%, -50%) scale(2); } 20% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -60%); } }
+    #big small { display: block; font-family: 'M PLUS Rounded 1c'; font-size: .26em; color: var(--yellow); }
+
+    .overlay { position: fixed; inset: 0; z-index: 40; display: flex; overflow-y: auto; padding: 24px var(--gut); background: rgba(10, 2, 30, .7); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+    .panel { margin: auto; width: min(780px, 100%); padding: clamp(20px, 3vw, 40px); border-radius: 30px; text-align: center; background: linear-gradient(160deg, #2b0d61, #170638); border: 2px solid rgba(255, 255, 255, .2); box-shadow: 0 30px 80px rgba(0, 0, 0, .5); }
+    .kicker { display: inline-block; padding: 4px 14px; border-radius: 999px; background: var(--pink); font-size: 13px; }
+    .panel h1 { font-family: var(--display); font-weight: 400; font-size: clamp(36px, 6vw, 72px); line-height: 1.1; margin: 14px 0 10px; text-shadow: 0 0 24px var(--pink); }
+    .panel h1 em { font-style: normal; color: var(--cyan); }
+    .panel h2 { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 4.6vw, 54px); margin: 10px 0; }
+    .lead { color: var(--muted); line-height: 1.7; margin: 0 0 22px; font-size: clamp(14px, 1.6vw, 18px); }
+    .btn { border: 0; border-radius: 999px; padding: 15px 30px; font-size: clamp(16px, 1.7vw, 20px); font-weight: 800; cursor: pointer; }
+    .btn.primary { background: linear-gradient(90deg, var(--pink), #ff7a59); box-shadow: 0 8px 30px rgba(255, 79, 163, .5); }
+    .btn.ghost { background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .3); }
+    .btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .rules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 24px; text-align: left; }
+    .rule { padding: 12px 14px; border-radius: 18px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .15); font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .rule b { display: block; color: #fff; font-size: 15px; }
+    .res-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 14px 0; }
+    .res-stats div { padding: 12px; border-radius: 18px; background: rgba(255, 255, 255, .07); }
+    .res-stats span { display: block; font-size: 12px; color: var(--muted); }
+    .res-stats b { font-family: var(--display); font-weight: 400; font-size: 28px; }
+    .entry { display: flex; gap: 8px; justify-content: center; margin: 6px 0 14px; }
+    .entry input { width: min(240px, 60vw); padding: 12px 16px; border-radius: 999px; border: 2px solid rgba(255, 255, 255, .3); background: rgba(0, 0, 0, .3); text-align: center; }
+    #ranking { list-style: none; padding: 0; margin: 0 auto 18px; max-width: 420px; text-align: left; }
+    #ranking li { display: grid; grid-template-columns: 36px 1fr auto; gap: 8px; padding: 8px 14px; border-radius: 12px; margin-bottom: 4px; background: rgba(255, 255, 255, .05); }
+    #ranking li.me { background: rgba(255, 79, 163, .35); }
+    #ranking li b { font-family: var(--display); font-weight: 400; }
+    #toast { position: fixed; left: 50%; bottom: 20px; z-index: 60; transform: translate(-50%, 20px); opacity: 0; transition: .3s; padding: 10px 20px; border-radius: 999px; background: #fff; color: #2a0f5c; font-size: 14px; pointer-events: none; max-width: 90vw; text-align: center; }
+    #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (max-width: 820px) {
+        #center { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+        #seq-panel { grid-column: 1 / -1; order: -1; }
+        .actor svg { height: min(100%, 30vh); }
+        #bubble { font-size: 12px; top: 0; }
+        #pads { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .rules, .res-stats { grid-template-columns: 1fr; }
+        .logo small { display: none; }
+    }
+    /* よこ もちの スマホ（せが ひくい）：3れつ（DJ・ことば・きみ）と パッド 4つ を 1行で */
+    @media (max-height: 520px) and (orientation: landscape) {
+        #app { gap: 6px; padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: max(6px, env(safe-area-inset-bottom)); grid-template-rows: auto minmax(0, 1fr) auto; }
+        #hud { gap: 6px; flex-wrap: nowrap; }
+        .logo { font-size: 16px; }
+        .logo small { display: none; }
+        .chip { padding: 3px 10px; }
+        .chip b { font-size: 16px; }
+        .icon-btn { width: 34px; height: 34px; }
+        #center { grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.6fr) minmax(0, 0.7fr); grid-template-rows: minmax(0, 1fr); gap: 6px; }
+        #seq-panel { grid-column: auto; order: 0; padding: 8px; }
+        .actor svg { height: min(100%, 52vh); }
+        #bubble { font-size: 11px; }
+        #pads { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+        .pad { padding: 6px; gap: 6px; border-radius: 14px; }
+        .pad i { width: 30px; font-size: 18px; }
+        .pad b { font-size: 12px; }
+        .pad small { display: none; }
+        #foot { display: none; }
+    }
+    /* ===== 英語 ===== */
+    #word { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 4px 0 8px; }
+    .tile {
+        min-width: clamp(34px, 3.4vw, 48px); height: clamp(44px, 4.4vw, 60px); padding: 0 8px; border-radius: 12px;
+        display: grid; place-items: center; font-family: 'Arial Rounded MT Bold', 'Helvetica Neue', Arial, sans-serif; font-weight: 800;
+        font-size: clamp(22px, 2.6vw, 34px); background: rgba(255, 255, 255, .08); border: 2px solid rgba(255, 255, 255, .25);
+    }
+    .tile.wordtile { font-size: clamp(16px, 1.8vw, 24px); }
+    .tile.lit { background: var(--yellow); color: #2a0f5c; transform: translateY(-4px); box-shadow: 0 0 18px var(--yellow); }
+    .tile.ok { background: var(--m3); border-color: #fff; }
+    .tile.ng { background: #ff3355; border-color: #fff; animation: shake .4s; }
+    .tile.next { border-color: var(--yellow); box-shadow: 0 0 0 3px rgba(255, 225, 77, .4); }
+    .tile.blank { color: transparent; }
+    #ja { text-align: center; font-size: clamp(15px, 1.6vw, 20px); color: #fff; }
+    #ja small { display: block; font-size: 12px; color: var(--muted); }
+    #type-tag { display: block; width: max-content; margin: 0 auto 6px; padding: 3px 12px; border-radius: 999px; font-size: 12px; background: var(--cyan); color: #12062e; }
+    .pad .opt { font-family: 'Arial Rounded MT Bold', 'Helvetica Neue', Arial, sans-serif; font-weight: 800; font-size: clamp(26px, 3vw, 42px); line-height: 1; min-width: 1em; text-align: center; }
+    .pad .opt.wordopt { font-size: clamp(16px, 1.9vw, 26px); }
+    .pad.dim .opt { opacity: .25; }
+    #timer-chip b.hurry { color: #ff6b8a; }
+    #explain {
+        position: fixed; left: 50%; top: 50%; z-index: 35; transform: translate(-50%, -50%); width: min(620px, 92vw);
+        padding: 22px 26px; border-radius: 26px; background: #fff; color: #2a0f5c; text-align: left;
+        box-shadow: 0 0 0 6px rgba(41, 230, 255, .5), 0 30px 80px rgba(0, 0, 0, .5); animation: pop .4s cubic-bezier(.2, 1.4, .4, 1);
+    }
+    @keyframes pop { from { transform: translate(-50%, -50%) scale(.85); opacity: 0; } }
+    #explain .ex-word { font-family: 'Arial Rounded MT Bold', 'Helvetica Neue', Arial, sans-serif; font-weight: 800; font-size: clamp(30px, 4vw, 48px); line-height: 1.15; }
+    #explain .ex-ja { font-size: 18px; margin: 4px 0 10px; }
+    #explain .ex-sent { padding: 10px 14px; border-radius: 14px; background: #f1ecff; margin-bottom: 8px; line-height: 1.5; }
+    #explain .ex-sent i { display: block; font-style: normal; font-size: 13px; color: #6b5a99; }
+    #explain .ex-note { font-size: 14px; line-height: 1.6; }
+    #explain .ex-note b { color: #d63384; }
+    #explain .ex-head { font-family: var(--display); font-size: 16px; color: #d63384; }
+    .mode-pick { display: grid; grid-template-columns: 1.8fr 1fr; align-items: center; gap: 12px; max-width: 460px; margin: 0 auto 20px; }
+    .mode-pick button { display: flex; flex-direction: column; align-items: center; padding: 10px; border-radius: 18px; background: rgba(255, 255, 255, .08); border: 2px solid rgba(255, 255, 255, .25); cursor: pointer; }
+    .mode-pick b { font-family: var(--display); font-weight: 400; font-size: 22px; letter-spacing: .1em; }
+    .mode-pick small { font-size: 12px; color: var(--muted); }
+    .mode-pick button.on { border-color: var(--cyan); background: rgba(41, 230, 255, .18); box-shadow: 0 0 20px rgba(41, 230, 255, .45); }
+    /* 2分（BASIC）がメイン、1分（FAST）はおまけ */
+    .mode-pick button[data-mode="basic"] { padding: 16px 10px; }
+    .mode-pick button[data-mode="basic"] b { font-size: 30px; }
+    .mode-pick button[data-mode="basic"] small { font-size: 14px; }
+    .mode-pick button[data-mode="fast"] { padding: 6px; }
+    .mode-pick button[data-mode="fast"] b { font-size: 15px; }
+    .mode-pick button[data-mode="fast"] small { font-size: 11px; }
+    #learned { list-style: none; padding: 0; margin: 0 0 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; text-align: left; }
+    #learned li { padding: 8px 12px; border-radius: 12px; background: rgba(255, 255, 255, .07); font-size: 13px; }
+    #learned li b { font-family: 'Arial Rounded MT Bold', 'Helvetica Neue', Arial, sans-serif; font-size: 16px; margin-right: 6px; }
+    #learned li.miss { border-left: 4px solid #ff6b8a; }
+    @media (max-width: 820px) { #learned { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div id="stage"><div class="beam b1"></div><div class="beam b2"></div><div class="beam b3"></div><div id="floor"></div></div>
+
+<div id="app">
+    <header id="hud">
+        <div class="logo"><small>HAMIGAKI ENGLISH DANCE</small>ハミガキ イングリッシュ</div>
+        <div class="chip" id="timer-chip"><span>のこり</span><b id="timer">2:00</b></div>
+        <div class="chip"><span>クリア</span><b id="cleared">0</b></div>
+        <div class="chip"><span>スコア</span><b id="score">0</b></div>
+        <button class="icon-btn" id="btn-sound" title="おと（M）">🔊</button>
+    </header>
+
+    <section id="center">
+        <div class="actor" id="dj">
+            <div id="bubble">ぼくの ダンス、まねできるかな？</div>
+            <svg viewBox="0 0 160 170" aria-label="DJムシバ">
+                <g class="bodybox" id="dj-body">
+                    <path d="M80 18 L88 4 L92 20 L106 10 L104 28 L122 24 L114 40 L132 44 L118 56 L132 70 L114 72 L120 90 L102 84 L100 102 L86 92 L76 106 L70 90 L54 100 L56 82 L38 86 L46 70 L30 62 L46 52 L34 38 L52 38 L50 20 L64 28 L68 10Z" fill="#a24bff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+                    <path d="M44 50 Q80 0 116 50" stroke="#ff4fa3" stroke-width="8" fill="none" stroke-linecap="round"/>
+                    <rect x="34" y="46" width="16" height="26" rx="8" fill="#ff4fa3" stroke="#fff" stroke-width="2"/>
+                    <rect x="110" y="46" width="16" height="26" rx="8" fill="#ff4fa3" stroke="#fff" stroke-width="2"/>
+                    <path d="M54 52 h22 q2 12 -11 12 q-11 0 -11 -12z M84 52 h22 q0 12 -11 12 q-13 0 -11 -12z" fill="#12062e" stroke="#29e6ff" stroke-width="2"/>
+                    <path d="M76 55 h8" stroke="#29e6ff" stroke-width="2"/>
+                    <path d="M64 76 Q80 88 96 76" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>
+                </g>
+                <rect x="20" y="112" width="120" height="50" rx="10" fill="#2a0f5c" stroke="#fff" stroke-width="3"/>
+                <g class="record"><circle cx="58" cy="137" r="18" fill="#12062e" stroke="#29e6ff" stroke-width="2"/><circle cx="58" cy="137" r="5" fill="#ff4fa3"/><path d="M58 121 v6" stroke="#fff" stroke-width="2"/></g>
+                <g class="record"><circle cx="104" cy="137" r="18" fill="#12062e" stroke="#ffe14d" stroke-width="2"/><circle cx="104" cy="137" r="5" fill="#29e6ff"/><path d="M104 121 v6" stroke="#fff" stroke-width="2"/></g>
+            </svg>
+            <div class="name-tag">DJ ムシバ</div>
+        </div>
+
+        <div id="seq-panel">
+            <span id="type-tag">たんご</span>
+            <div id="phase">よく みてね！</div>
+            <div id="word"></div>
+            <div id="ja"></div>
+            <div id="phase-sub"></div>
+        </div>
+
+        <div class="actor" id="dancer">
+            <svg viewBox="0 0 140 180" aria-label="ハミガキダンサー">
+                <g class="bodybox idle" id="dancer-body">
+                    <path d="M44 120 L36 166 M96 120 L104 166" stroke="#fff" stroke-width="9" stroke-linecap="round"/>
+                    <ellipse cx="34" cy="168" rx="14" ry="7" fill="#29e6ff"/><ellipse cx="106" cy="168" rx="14" ry="7" fill="#29e6ff"/>
+                    <path d="M28 62 L6 30 M112 62 L134 30" stroke="#fff" stroke-width="9" stroke-linecap="round"/>
+                    <circle cx="6" cy="28" r="8" fill="#fff"/><circle cx="134" cy="28" r="8" fill="#fff"/>
+                    <path d="M28 44 Q27 14 52 15 Q62 20 70 15 Q78 20 88 15 Q113 14 112 44 Q112 74 104 98 Q99 128 88 128 Q80 128 78 108 Q70 96 62 108 Q60 128 52 128 Q41 128 36 98 Q28 74 28 44Z" fill="#fff" stroke="#29e6ff" stroke-width="4"/>
+                    <path d="M30 34 Q70 18 110 34" stroke="#ff4fa3" stroke-width="8" fill="none" stroke-linecap="round"/>
+                    <ellipse cx="56" cy="58" rx="6" ry="8" fill="#12062e"/><ellipse cx="84" cy="58" rx="6" ry="8" fill="#12062e"/>
+                    <circle cx="58" cy="55" r="2" fill="#fff"/><circle cx="86" cy="55" r="2" fill="#fff"/>
+                    <circle cx="44" cy="72" r="6" fill="#ffb4d0"/><circle cx="96" cy="72" r="6" fill="#ffb4d0"/>
+                    <path d="M58 76 Q70 90 82 76Z" fill="#ff4fa3"/>
+                </g>
+            </svg>
+            <div class="name-tag">きみ</div>
+        </div>
+    </section>
+
+    <section id="pads">
+        <button class="pad" data-m="0" style="--c: var(--m0)"><i>↕</i><span class="opt"></span><span><b>たて</b><small>キー ↑↓</small></span><span class="hold"></span></button>
+        <button class="pad" data-m="1" style="--c: var(--m1)"><i>↔</i><span class="opt"></span><span><b>よこ</b><small>キー ←→</small></span><span class="hold"></span></button>
+        <button class="pad" data-m="2" style="--c: var(--m2)"><i>↻</i><span class="opt"></span><span><b>ぐるぐる</b><small>キー C</small></span><span class="hold"></span></button>
+        <button class="pad" data-m="3" style="--c: var(--m3)"><i>⤵</i><span class="opt"></span><span><b>うちがわ</b><small>キー G</small></span><span class="hold"></span></button>
+    </section>
+    <div id="foot">つぎの 文字（ことば）が かいてある パッドの みがきかたを つづけて、パッドが しろく いっぱいに なったら 入力！（ほかの みがきかたが まじっても、すぐには 入らないよ）</div>
+</div>
+
+<div id="big"></div>
+<div id="explain" class="hidden"></div>
+<div id="toast"></div>
+
+<div id="title" class="overlay">
+    <div class="panel">
+        <span class="kicker">えいご × メモリー</span>
+        <h1>ハミガキ<br><em>イングリッシュ</em></h1>
+        <p class="lead">DJ ムシバが おどりながら 英単語や 英文を みせるよ。<br>おぼえたら、ハブラシで 1文字ずつ（1語ずつ）くみたてよう！</p>
+        <div class="mode-pick" id="mode-pick">
+            <button data-mode="basic"><b>BASIC</b><small>2ふん</small></button>
+            <button data-mode="fast"><b>FAST</b><small>1ぷん</small></button>
+        </div>
+        <div class="btn-row">
+            <button class="btn primary" id="btn-bt">micro:bit で はじめる</button>
+            <button class="btn ghost" id="btn-sim">テストモード</button>
+        </div>
+        <div class="rules">
+            <div class="rule"><b>👀 みる・きく</b>DJ が 単語を おどって 見せるよ。英語の はつおんも ながれる。</div>
+            <div class="rule"><b>🪥 つづる</b>4つの パッドに 文字が でる。つぎの 文字の みがきかたで みがこう。</div>
+            <div class="rule"><b>📖 わかる</b>できたら 意味・例文・ポイントを 解説。3回に1回は 英文の ならべかえ！</div>
+        </div>
+    </div>
+</div>
+
+<div id="result" class="overlay hidden">
+    <div class="panel">
+        <span class="kicker">TIME UP</span>
+        <h2 id="res-title">ナイスダンス！</h2>
+        <div class="res-stats">
+            <div><span>スコア</span><b id="res-score">0</b></div>
+            <div><span>クリアした かず</span><b id="res-round">0</b></div>
+            <div><span>せいかい りつ</span><b id="res-rate">0%</b></div>
+        </div>
+        <h3 style="margin:6px 0 8px;font-size:15px">きょう まなんだ えいご</h3>
+        <ul id="learned"></ul>
+        <div class="entry" id="entry"><input id="name" maxlength="8" placeholder="なまえ"><button class="btn primary" id="btn-save">ランキングに のせる</button></div>
+        <ol id="ranking"></ol>
+        <div class="btn-row">
+            <button class="btn primary" id="btn-again">つぎの ひと / もういちど</button>
+            <button class="btn ghost" id="btn-home">タイトルへ</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const $ = id => document.getElementById(id);
+
+    /* =========================================================
+       えいごの データ
+       ========================================================= */
+    const WORDS = [
+        // レベル1（3〜4文字）
+        [
+            { w: 'cat',  ja: 'ねこ', ex: 'I have a cat.', exJa: 'わたしは ねこを かっています。', note: 'ふくすうけいは <b>cats</b>。' },
+            { w: 'sun',  ja: 'たいよう', ex: 'The sun is hot.', exJa: 'たいようは あつい。', note: '「日曜日」<b>Sun</b>day の Sun も たいようのこと。' },
+            { w: 'book', ja: '本', ex: 'This is my book.', exJa: 'これは わたしの 本です。', note: '<b>book a table</b> で「せきを よやくする」という意味にも なる。' },
+            { w: 'milk', ja: 'ぎゅうにゅう', ex: 'I drink milk.', exJa: 'ぎゅうにゅうを のみます。', note: '数えられない名詞。<b>a milk</b> とは いわない。' },
+            { w: 'tree', ja: '木', ex: 'The tree is tall.', exJa: 'その木は 高い。', note: '<b>ee</b> は「イー」と のばす音。' },
+            { w: 'fish', ja: 'さかな', ex: 'I like fish.', exJa: 'さかなが すきです。', note: 'ふくすうけいも <b>fish</b> の ままが ふつう。' },
+            { w: 'rain', ja: '雨', ex: 'It is raining.', exJa: '雨が ふっています。', note: '「にじ」は <b>rainbow</b>（雨＋弓）。' },
+            { w: 'blue', ja: '青', ex: 'The sky is blue.', exJa: '空は 青い。', note: '「ゆううつな」という 意味も ある。' },
+            { w: 'hand', ja: '手', ex: 'Raise your hand.', exJa: '手を あげて。', note: '<b>give a hand</b> で「手つだう」。' },
+            { w: 'star', ja: 'ほし', ex: 'I see a star.', exJa: 'ほしが 見えます。', note: '「人気者」も <b>star</b>。' }
+        ],
+        // レベル2（5文字）
+        [
+            { w: 'tooth', ja: '歯', ex: 'Brush your teeth.', exJa: '歯を みがこう。', note: 'ふくすうけいは <b>teeth</b>（oo が ee に かわる）。' },
+            { w: 'apple', ja: 'りんご', ex: 'I eat an apple.', exJa: 'りんごを たべます。', note: 'ぼいん（a, i, u, e, o の音）で はじまるので <b>a</b> ではなく <b>an</b>。' },
+            { w: 'water', ja: '水', ex: 'Drink some water.', exJa: '水を のもう。', note: '「水やりをする」という 動詞にも なる。' },
+            { w: 'happy', ja: 'うれしい', ex: 'I am happy.', exJa: 'わたしは うれしい。', note: 'はんたいは <b>sad</b>（かなしい）。' },
+            { w: 'music', ja: 'おんがく', ex: 'I love music.', exJa: 'おんがくが 大すき。', note: 'はつおんは「ミューズィック」。' },
+            { w: 'smile', ja: 'ほほえむ', ex: 'Smile at the camera.', exJa: 'カメラに わらって。', note: '声を出して わらうのは <b>laugh</b>。' },
+            { w: 'clean', ja: 'きれいな', ex: 'My room is clean.', exJa: 'へやは きれいだ。', note: '「そうじする」という 動詞にも なる。' },
+            { w: 'sleep', ja: 'ねむる', ex: 'I sleep at ten.', exJa: '10時に ねます。', note: 'かこけいは <b>slept</b>。' },
+            { w: 'study', ja: 'べんきょうする', ex: 'I study English.', exJa: '英語を べんきょうします。', note: 'かこけいは <b>studied</b>（y を i に かえて ed）。' },
+            { w: 'world', ja: 'せかい', ex: 'Travel the world.', exJa: 'せかいを たびする。', note: '<b>or</b> は「アー」に ちかい音。' }
+        ],
+        // レベル3（6〜7文字）
+        [
+            { w: 'morning', ja: '朝', ex: 'Good morning!', exJa: 'おはよう！', note: '「夕方」は <b>evening</b>。' },
+            { w: 'friend', ja: 'ともだち', ex: 'She is my friend.', exJa: 'かのじょは わたしの ともだちです。', note: '<b>ie</b> の じゅんばんに ちゅうい（fr-<b>ie</b>-nd）。' },
+            { w: 'school', ja: '学校', ex: 'I go to school.', exJa: '学校に いきます。', note: '<b>ch</b> は「ク」の音。' },
+            { w: 'dentist', ja: '歯医者さん', ex: 'I visit the dentist.', exJa: '歯医者さんに いきます。', note: '<b>dent-</b> は「歯」を あらわす ことば。' },
+            { w: 'healthy', ja: 'けんこうな', ex: 'Eat healthy food.', exJa: 'けんこうてきな たべものを たべよう。', note: '<b>health</b>（けんこう）＋ y。' },
+            { w: 'science', ja: 'りか・かがく', ex: 'I like science.', exJa: 'りかが すき。', note: '<b>sc</b> は「サ」と よむ。' },
+            { w: 'because', ja: 'なぜなら', ex: 'I stayed home because it rained.', exJa: '雨だったので 家にいた。', note: 'りゆうを せつめいするときに つかう。' },
+            { w: 'library', ja: 'としょかん', ex: "Let's go to the library.", exJa: 'としょかんに いこう。', note: '「本屋」は <b>bookstore</b>。' },
+            { w: 'weather', ja: 'てんき', ex: 'The weather is nice.', exJa: 'いい てんきだ。', note: '<b>ea</b> は「エ」の音。' },
+            { w: 'promise', ja: 'やくそく', ex: 'Keep your promise.', exJa: 'やくそくを まもろう。', note: '「やくそくする」という 動詞にも なる。' }
+        ]
+    ];
+    const SENTENCES = [
+        { s: 'I brush my teeth every day', ja: 'わたしは 毎日 歯を みがきます。', note: '<b>every day</b>（毎日）は 文の さいごに おくことが 多い。' },
+        { s: 'She plays the piano well', ja: 'かのじょは ピアノを じょうずに ひきます。', note: 'がっきの 前には <b>the</b> を つける。' },
+        { s: 'What time do you get up', ja: 'あなたは 何時に おきますか。', note: 'ぎもんし <b>What time</b> が 文の さいしょ。' },
+        { s: 'I want to be a doctor', ja: 'わたしは 医者に なりたい。', note: '<b>want to 〜</b> ＝「〜したい」。' },
+        { s: 'Can you help me with my homework', ja: 'しゅくだいを 手つだって くれますか。', note: '<b>help 人 with もの</b>「人の ものを 手つだう」。' },
+        { s: 'He is taller than his father', ja: 'かれは お父さんより せが 高い。', note: 'くらべるときは <b>〜er than</b>。' },
+        { s: 'I have never been to Kyoto', ja: 'わたしは 京都に 行ったことが ない。', note: '<b>have been to 〜</b>「〜に 行ったことが ある」。' },
+        { s: 'This book was written by Soseki', ja: 'この本は 漱石によって 書かれた。', note: 'うけみ：<b>be ＋ かこぶんし ＋ by</b>。' },
+        { s: 'I will stay home if it rains', ja: '雨なら 家に います。', note: '<b>if</b> のあとは みらいのことでも げんざいけい。' },
+        { s: 'It is fun to play soccer', ja: 'サッカーを するのは たのしい。', note: '<b>It is 〜 to …</b>「…することは 〜だ」。' }
+    ];
+    const EXTRA_WORDS = ['a', 'the', 'is', 'are', 'do', 'to', 'of', 'in', 'was', 'be', 'at', 'have', 'has', 'my', 'your', 'his', 'will', 'than', 'by', 'for', 'with', 'did', 'an', 'on'];
+    const CONFUSE = { b: 'dp', d: 'bp', p: 'bq', m: 'nw', n: 'mu', e: 'ai', a: 'eo', i: 'el', o: 'ua', u: 'on', r: 'l', l: 'ri', c: 'ks', k: 'c', s: 'cz', t: 'f', f: 't', y: 'i', w: 'v', v: 'w', g: 'j', h: 'n' };
+
+    /* =========================================================
+       設定
+       ========================================================= */
+    const MOTIONS = [
+        { name: 'たて',     note: 523 },
+        { name: 'よこ',     note: 659 },
+        { name: 'ぐるぐる', note: 784 },
+        { name: 'うちがわ', note: 988 }
+    ];
+    const HOLD_SEC = 0.6;     // 信号がとぎれても、この秒数は「みがいている」とみなす
+    // 入力の はやさ。パッドごとに ゲージが あり、その うごきを みがいている あいだ たまり、ほかの ときは へっていく。
+    // micro:bit は みがきかたを かえる とちゅうで 一瞬 ちがう 判定が でるので、ゆっくり たまり、ゆっくり へるように する
+    //   reg:     この秒数 みがくと ゲージが いっぱいに なって 1つ 入力
+    //   drain:   みがいていない パッドの ゲージが 1秒に へる わりあい（1 = 1秒で からっぽ）
+    //   rearm:   おなじ うごきを もういちど 入れるには、その うごきを この秒数 やめる
+    //   cool:    入力したあと この秒数は つぎの 入力を うけつけない（きりかえる じかん）
+    //   timeout: この秒数 なにも 入らないと こたえを みせて つぎへ
+    const INPUT = {
+        sim:      { reg: 0.45, drain: 2.0,  rearm: 0.35, cool: 0.15, timeout: 10 },
+        microbit: { reg: 2.0,  drain: 0.35, rearm: 0.9,  cool: 0.8,  timeout: 25 }
+    };
+    const IN = () => INPUT[S.sim ? 'sim' : 'microbit'];
+    const COURSES = { fast: { sec: 60, label: 'FAST' }, basic: { sec: 120, label: 'BASIC' } };
+    let course = (() => { try { return localStorage.getItem('hamigaki-mode') === 'fast' ? 'fast' : 'basic'; } catch (e) { return 'basic'; } })();
+    const rankKey = () => `hamigaki-rank-english-${course}`;
+
+    const S = {
+        mode: 'title',        // title | show | input | explain | over
+        sim: true, sound: true,
+        left: 120, round: 0, cleared: 0,
+        item: null, tokens: [], pos: 0, opts: [], correctM: -1, lastM: -1,
+        score: 0, combo: 0, right: 0, miss: 0, roundMiss: 0, idle: 0,
+        used: new Set(), learned: []
+    };
+    let time = 0;
+    const motionUntil = [0, 0, 0, 0];
+    const keyHeld = new Set();
+    const pointerHeld = [false, false, false, false];
+    const inp = { charge: [0, 0, 0, 0], lock: [false, false, false, false], off: [0, 0, 0, 0], cool: 0 };
+    let timers = [];
+    function later(ms, fn) { timers.push(setTimeout(fn, ms)); }
+    function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+    const isBrushing = m => motionUntil[m] > time;
+    const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+    const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+    /* ---------- 入力 ---------- */
+    const UART_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    const UART_TX_CHAR_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+    const UART_RX_CHAR_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+    let rxCharacteristic = null, feedbackBusy = false;
+
+    async function connectBluetooth() {
+        initAudio();
+        if (!navigator.bluetooth) { toast('この ブラウザは Bluetooth に たいおう していません。テストモードで あそんでね'); return; }
+        try {
+            const device = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: "BBC micro:bit" }], optionalServices: [UART_SERVICE_UUID] });
+            device.addEventListener('gattserverdisconnected', () => { rxCharacteristic = null; setSim(true); toast('micro:bit との せつぞくが きれました'); });
+            const server = await device.gatt.connect();
+            const service = await server.getPrimaryService(UART_SERVICE_UUID);
+            rxCharacteristic = await service.getCharacteristic(UART_RX_CHAR_UUID);
+            const txChar = await service.getCharacteristic(UART_TX_CHAR_UUID);
+            await txChar.startNotifications();
+            txChar.addEventListener('characteristicvaluechanged', (e) => {
+                new TextDecoder().decode(e.target.value).split(/\r?\n/).map(s => s.trim()).filter(Boolean).forEach(onSignal);
+            });
+            start(false);
+        } catch (error) {
+            console.error(error);
+            toast('せつぞく できませんでした。もういちど ためしてね');
+        }
+    }
+    function onSignal(code) { if (/^[0-3]$/.test(code)) motionUntil[Number(code)] = time + HOLD_SEC; }
+    async function sendFeedback(msg) {
+        if (!rxCharacteristic || S.sim || feedbackBusy) return;
+        feedbackBusy = true;
+        try { await rxCharacteristic.writeValue(new TextEncoder().encode(msg + "\n")); } catch (e) { console.error("送信エラー:", e); }
+        feedbackBusy = false;
+    }
+
+    const KEY_MOTION = { ArrowUp: 0, ArrowDown: 0, ArrowLeft: 1, ArrowRight: 1, c: 2, C: 2, g: 3, G: 3 };
+    window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT') return;
+        if (e.key in KEY_MOTION) { keyHeld.add(e.key); e.preventDefault(); return; }
+        if (e.key === 'm' || e.key === 'M') toggleSound();
+    });
+    window.addEventListener('keyup', (e) => { if (e.key in KEY_MOTION) { keyHeld.delete(e.key); motionUntil[KEY_MOTION[e.key]] = 0; } });
+    window.addEventListener('blur', () => { keyHeld.clear(); pointerHeld.fill(false); });
+    document.querySelectorAll('.pad').forEach(el => {
+        const m = Number(el.dataset.m);
+        const release = () => { pointerHeld[m] = false; motionUntil[m] = 0; };
+        el.addEventListener('pointerdown', (e) => { initAudio(); pointerHeld[m] = true; el.setPointerCapture(e.pointerId); });
+        el.addEventListener('pointerup', release);
+        el.addEventListener('pointercancel', release);
+        el.addEventListener('lostpointercapture', release);
+    });
+    function pollHeld() {
+        keyHeld.forEach(k => { motionUntil[KEY_MOTION[k]] = time + HOLD_SEC; });
+        pointerHeld.forEach((h, m) => { if (h) motionUntil[m] = time + HOLD_SEC; });
+    }
+    function activeMotion() {
+        let best = -1, bestT = time;
+        for (let m = 0; m < 4; m++) if (motionUntil[m] > bestT) { bestT = motionUntil[m]; best = m; }
+        return best;
+    }
+    // みがきつづけた うごきを「1つの入力」に かえる（いちばん さきに ゲージが いっぱいに なった パッド）
+    function readMove(dt) {
+        const cfg = IN();
+        if (inp.cool > 0) inp.cool -= dt;
+        const a = activeMotion();
+        let hit = -1;
+        for (let m = 0; m < 4; m++) {
+            inp.off[m] = m === a ? 0 : inp.off[m] + dt;
+            if (inp.lock[m] && inp.off[m] >= cfg.rearm) inp.lock[m] = false;
+            if (m === a && !inp.lock[m] && inp.cool <= 0) inp.charge[m] += dt / cfg.reg;
+            else inp.charge[m] = Math.max(0, inp.charge[m] - dt * cfg.drain);
+            if (inp.charge[m] >= 1 && hit < 0) hit = m;
+        }
+        if (hit >= 0) {
+            inp.charge.fill(0);
+            inp.lock[hit] = true;   // おなじ うごきを つづけても、つぎの 入力には ならない
+            inp.cool = cfg.cool;
+        }
+        return hit;
+    }
+    // いま みがいている うごきは、いちど やめるまで 入力に しない（おてほんの あいだの うごきを ひきずらない）
+    function lockInput() {
+        inp.charge.fill(0);
+        for (let m = 0; m < 4; m++) if (isBrushing(m)) { inp.lock[m] = true; inp.off[m] = 0; }
+    }
+
+    /* =========================================================
+       すすめかた
+       ========================================================= */
+    function start(sim) {
+        initAudio();
+        setSim(sim);
+        clearTimers();
+        Object.assign(S, { left: COURSES[course].sec, round: 0, cleared: 0, score: 0, combo: 0, right: 0, miss: 0, used: new Set(), learned: [], lastM: -1 });
+        $('title').classList.add('hidden');
+        $('result').classList.add('hidden');
+        $('explain').classList.add('hidden');
+        updateHud();
+        bigText('READY?', 'DJ ムシバの えいごを よく みてね');
+        say('イングリッシュ ダンス、スタート！', true);
+        S.mode = 'wait';
+        later(1600, nextRound);
+    }
+
+    function pickItem() {
+        S.round++;
+        const isSentence = S.round % 3 === 0;
+        const level = Math.min(2, Math.floor((S.round - 1) / 2));
+        const pool = isSentence ? SENTENCES : WORDS[level];
+        let cands = pool.filter(x => !S.used.has(x));
+        if (!cands.length) cands = pool;
+        const item = cands[Math.floor(Math.random() * cands.length)];
+        S.used.add(item);
+        return isSentence
+            ? { kind: 'sentence', item, tokens: item.s.split(' '), text: item.s, ja: item.ja }
+            : { kind: 'word', item, tokens: item.w.split(''), text: item.w, ja: item.ja };
+    }
+
+    function nextRound() {
+        if (S.left <= 0) return;
+        S.item = pickItem();
+        S.tokens = S.item.tokens;
+        S.pos = 0;
+        S.roundMiss = 0;
+        showModel();
+    }
+
+    function showModel() {
+        S.mode = 'show';
+        const it = S.item;
+        $('type-tag').textContent = it.kind === 'word' ? `たんご（${it.tokens.length}もじ）` : `えいぶん ならべかえ（${it.tokens.length}ご）`;
+        $('phase').textContent = 'よく みて おぼえよう！';
+        $('ja').innerHTML = `${it.ja}`;
+        $('phase-sub').textContent = '';
+        renderTiles('show', -1);
+        setPads(null);
+        setBubble(it.kind === 'word' ? 'この たんご、つづれるかな？' : 'この 英文を ならべてみて！');
+        sayEn(it.text);
+        const step = it.kind === 'word' ? 420 : 620;
+        const start = 1100;
+        it.tokens.forEach((tok, i) => later(start + i * step, () => {
+            renderTiles('show', i);
+            const m = i % 4;
+            pose($('dj-body'), m);
+            tone(MOTIONS[m].note * (it.kind === 'word' ? 1 : 0.75), 0.18, 'square', 0.05);
+            beat();
+        }));
+        later(start + it.tokens.length * step + 700, startInput);
+    }
+
+    function startInput() {
+        S.mode = 'input';
+        $('phase').textContent = 'きみの ばん！';
+        $('phase-sub').textContent = S.item.kind === 'word' ? 'つぎの 文字の パッドで みがこう' : 'つぎの ことばの パッドで みがこう';
+        setBubble('さあ、くみたてて！');
+        lockInput();
+        nextStep();
+    }
+
+    // 4つの パッドに こたえと ひっかけを くばる（こたえは まえと ちがう みがきかたに）
+    function nextStep() {
+        S.idle = 0;
+        renderTiles('input');
+        if (S.pos >= S.tokens.length) { roundClear(); return; }
+        const ans = S.tokens[S.pos];
+        const wrong = S.item.kind === 'word' ? letterDistractors(ans) : wordDistractors(ans);
+        const motions = [0, 1, 2, 3].filter(m => m !== S.lastM);
+        const correctM = motions[Math.floor(Math.random() * motions.length)];
+        const rest = shuffle(wrong);
+        S.opts = [0, 1, 2, 3].map(m => (m === correctM ? ans : rest.pop()));
+        S.correctM = correctM;
+        setPads(S.opts);
+    }
+
+    function letterDistractors(ans) {
+        const set = new Set();
+        for (const c of (CONFUSE[ans] || '')) set.add(c);
+        for (const c of shuffle([...new Set(S.tokens)])) set.add(c);
+        for (const c of shuffle('abcdefghijklmnopqrstuvwxyz'.split(''))) set.add(c);
+        set.delete(ans);
+        return [...set].slice(0, 3);
+    }
+    function wordDistractors(ans) {
+        const rest = S.tokens.slice(S.pos + 1).filter(w => w.toLowerCase() !== ans.toLowerCase());
+        const set = new Set(shuffle(rest));
+        for (const w of shuffle(EXTRA_WORDS)) if (w.toLowerCase() !== ans.toLowerCase()) set.add(w);
+        return [...set].slice(0, 3);
+    }
+
+    function update(dt) {
+        if (S.mode !== 'title' && S.mode !== 'over') {
+            S.left -= dt;
+            if (S.left <= 0) { S.left = 0; gameOver(); return; }
+        }
+        const move = readMove(dt);
+        if (S.mode !== 'input') return;
+        S.idle += dt;
+        if (move >= 0) {
+            S.lastM = move;
+            if (move === S.correctM) correct(move);
+            else miss(move);
+        } else if (S.idle > IN().timeout) {
+            miss(-1);
+        }
+    }
+
+    function correct(m) {
+        S.right++;
+        S.combo++;
+        S.score += 10 + Math.min(S.combo, 20);
+        flashPad(m);
+        pose($('dancer-body'), m);
+        tone(MOTIONS[m].note, 0.2, 'triangle', 0.09);
+        beat();
+        sendFeedback("O");   // 入ったことを micro:bit にも しらせる
+        S.pos++;
+        updateHud();
+        nextStep();
+    }
+
+    function miss(m) {
+        S.miss++;
+        S.roundMiss++;
+        S.combo = 0;
+        const ans = S.tokens[S.pos];
+        if (m >= 0) flashPad(m);
+        pose($('dancer-body'), -1);
+        tone(220, 0.3, 'sawtooth', 0.07);
+        sendFeedback("X");
+        renderTiles('input', true);
+        setBubble(`おしい！ ただしくは「${ans}」だよ`);
+        $('phase-sub').textContent = `ただしくは「${ans}」`;
+        S.mode = 'wait';
+        later(900, () => {
+            if (S.mode !== 'wait') return;
+            S.pos++;
+            S.mode = 'input';
+            nextStep();
+        });
+    }
+
+    function roundClear() {
+        S.mode = 'explain';
+        S.cleared++;
+        const perfect = S.roundMiss === 0;
+        if (perfect) S.score += 30;
+        S.learned.push({ ...S.item, perfect });
+        updateHud();
+        setPads(null);
+        sendFeedback("O");
+        [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, 'triangle', 0.09, i * 0.07));
+        pose($('dancer-body'), 2);
+        bigText(perfect ? 'PERFECT!' : 'CLEAR!', perfect ? 'ボーナス +30' : '');
+        setBubble(perfect ? 'すごい！ かんぺきだね！' : 'ナイス！ いみも おぼえよう！');
+        showExplain();
+        const dur = course === 'fast' ? 3200 : 4200;
+        later(dur, () => {
+            $('explain').classList.add('hidden');
+            if (S.left > 0) nextRound();
+        });
+    }
+
+    function showExplain() {
+        const it = S.item;
+        const ex = it.item;
+        $('explain').innerHTML = it.kind === 'word'
+            ? `<div class="ex-head">たんご</div>
+               <div class="ex-word">${ex.w}</div>
+               <div class="ex-ja">${ex.ja}</div>
+               <div class="ex-sent">${ex.ex}<i>${ex.exJa}</i></div>
+               <div class="ex-note">💡 ${ex.note}</div>`
+            : `<div class="ex-head">えいぶん</div>
+               <div class="ex-word" style="font-size:clamp(22px,3vw,34px)">${ex.s}.</div>
+               <div class="ex-ja">${ex.ja}</div>
+               <div class="ex-note">💡 ${ex.note}</div>`;
+        $('explain').classList.remove('hidden');
+        if (it.kind === 'word') sayEn(`${ex.w}. ${ex.ex}`);
+        else sayEn(ex.s);
+    }
+
+    function gameOver() {
+        if (S.mode === 'over') return;
+        S.mode = 'over';
+        clearTimers();
+        $('explain').classList.add('hidden');
+        bigText('TIME UP!', '');
+        const total = S.right + S.miss;
+        $('res-title').textContent = S.cleared >= 8 ? 'えいご マスター！' : S.cleared >= 4 ? 'ナイス！' : 'よく がんばった！';
+        $('res-score').textContent = S.score;
+        $('res-round').textContent = S.cleared;
+        $('res-rate').textContent = total ? Math.round(S.right / total * 100) + '%' : '-';
+        $('learned').innerHTML = S.learned.length
+            ? S.learned.map(l => `<li class="${l.perfect ? '' : 'miss'}"><b>${l.kind === 'word' ? l.item.w : l.item.s + '.'}</b>${l.item.ja}</li>`).join('')
+            : '<li>つぎは 1つ クリア してみよう！</li>';
+        $('entry').classList.remove('hidden');
+        $('name').value = '';
+        renderRanking();
+        later(1200, () => $('result').classList.remove('hidden'));
+        say(`タイムアップ！ ${S.cleared}こ クリア！`, true);
+    }
+
+    function backToTitle() {
+        clearTimers();
+        S.mode = 'title';
+        $('result').classList.add('hidden');
+        $('explain').classList.add('hidden');
+        $('title').classList.remove('hidden');
+    }
+
+    /* ---------- ランキング ---------- */
+    function loadRank() { try { return JSON.parse(localStorage.getItem(rankKey())) || []; } catch (e) { return []; } }
+    let lastSavedAt = null;
+    function saveRank() {
+        const name = $('name').value.trim() || 'プレイヤー';
+        const list = loadRank();
+        lastSavedAt = Date.now();
+        list.push({ name, score: S.score, cleared: S.cleared, at: lastSavedAt });
+        list.sort((a, b) => b.score - a.score);
+        try { localStorage.setItem(rankKey(), JSON.stringify(list.slice(0, 10))); } catch (e) { console.error(e); }
+        $('entry').classList.add('hidden');
+        renderRanking();
+    }
+    function renderRanking() {
+        const list = loadRank();
+        $('ranking').innerHTML = `<li><span></span><span><small>${COURSES[course].label} ランキング</small></span><span></span></li>` + (list.length
+            ? list.map((r, i) => `<li class="${r.at === lastSavedAt ? 'me' : ''}"><b>${i + 1}</b><span>${escapeHtml(r.name)}　<small>${r.cleared}こ クリア</small></span><b>${r.score}</b></li>`).join('')
+            : '<li><span></span><span>まだ きろくが ないよ</span><span></span></li>');
+    }
+    function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+    /* ---------- 表示 ---------- */
+    function renderTiles(phase, arg) {
+        const it = S.item;
+        const word = it.kind === 'word';
+        $('word').innerHTML = S.tokens.map((t, i) => {
+            let cls = 'tile' + (word ? '' : ' wordtile'), txt = t;
+            if (phase === 'show') {
+                if (i === arg) cls += ' lit';
+            } else {
+                if (i < S.pos) cls += ' ok';
+                else if (i === S.pos && arg === true) cls += ' ng';
+                else { cls += ' blank' + (i === S.pos ? ' next' : ''); txt = word ? '_' : '____'; }
+            }
+            return `<div class="${cls}">${escapeHtml(txt)}</div>`;
+        }).join('');
+    }
+
+    function setPads(opts) {
+        document.querySelectorAll('.pad').forEach((p, m) => {
+            const o = p.querySelector('.opt');
+            o.textContent = opts ? opts[m] : '';
+            o.classList.toggle('wordopt', !!opts && S.item.kind === 'sentence');
+            p.classList.toggle('dim', !opts);
+        });
+    }
+
+    function updateHud() {
+        const l = Math.max(0, S.left);
+        $('timer').textContent = `${Math.floor(l / 60)}:${String(Math.ceil(l % 60) === 60 ? 0 : Math.ceil(l % 60)).padStart(2, '0')}`;
+        $('timer').classList.toggle('hurry', S.mode !== 'title' && l <= 10);
+        $('cleared').textContent = S.cleared;
+        $('score').textContent = S.score;
+    }
+
+    function flashPad(m) {
+        const p = document.querySelector(`.pad[data-m="${m}"]`);
+        p.classList.add('lit');
+        setTimeout(() => p.classList.remove('lit'), 280);
+    }
+
+    function pose(el, m) {
+        el.classList.remove('idle', 'pose-0', 'pose-1', 'pose-2', 'pose-3', 'stumble');
+        void el.getBoundingClientRect();
+        el.classList.add(m < 0 ? 'stumble' : 'pose-' + m);
+        clearTimeout(el._t);
+        el._t = setTimeout(() => {
+            el.classList.remove('pose-0', 'pose-1', 'pose-2', 'pose-3', 'stumble');
+            el.classList.add('idle');
+        }, 600);
+    }
+
+    function beat() {
+        document.body.classList.remove('beat'); void document.body.offsetWidth; document.body.classList.add('beat');
+    }
+
+    function bigText(big, small) {
+        const el = $('big');
+        el.innerHTML = `${big}<small>${small}</small>`;
+        el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+    }
+    function setBubble(t) { $('bubble').textContent = t; }
+
+    function render() {
+        updateHud();
+        document.querySelectorAll('.pad').forEach((p, m) => {
+            p.classList.toggle('on', isBrushing(m));
+            const h = S.mode === 'input' ? Math.min(1, inp.charge[m]) : 0;
+            p.style.setProperty('--h', h);
+        });
+    }
+
+    let toastTimer = null;
+    function toast(text) {
+        const t = $('toast');
+        t.textContent = text; t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+    }
+    function setSim(sim) { S.sim = sim; document.body.classList.toggle('sim', sim); }
+
+    /* ---------- おと・こえ ---------- */
+    let ac = null;
+    function initAudio() {
+        if (!ac) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; ac = new AC(); }
+        if (ac.state === 'suspended') ac.resume();
+    }
+    function tone(freq, dur, type = 'triangle', vol = 0.08, delay = 0) {
+        if (!ac || !S.sound) return;
+        const t0 = ac.currentTime + delay;
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = type; o.frequency.setValueAtTime(freq, t0);
+        g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        o.connect(g).connect(ac.destination); o.start(t0); o.stop(t0 + dur + 0.02);
+    }
+    function speakIn(text, lang, rate, important) {
+        if (!('speechSynthesis' in window) || !S.sound) return;
+        if (!important && speechSynthesis.speaking) return;
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = lang; u.rate = rate;
+        const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.replace('_', '-').startsWith(lang));
+        if (v) u.voice = v;
+        speechSynthesis.speak(u);
+    }
+    const say = (text, important = false) => speakIn(text, 'ja-JP', 1.25, important);
+    const sayEn = text => speakIn(text, 'en-US', 0.9, true);
+    function toggleSound() {
+        S.sound = !S.sound;
+        $('btn-sound').textContent = S.sound ? '🔊' : '🔇';
+        if (!S.sound && 'speechSynthesis' in window) speechSynthesis.cancel();
+    }
+
+    function setCourse(c) {
+        course = c;
+        try { localStorage.setItem('hamigaki-mode', c); } catch (e) {}
+        document.querySelectorAll('#mode-pick button').forEach(b => b.classList.toggle('on', b.dataset.mode === c));
+        S.left = COURSES[c].sec;
+        updateHud();
+    }
+
+    /* ---------- はじめる ---------- */
+    $('btn-bt').addEventListener('click', connectBluetooth);
+    $('btn-sim').addEventListener('click', () => start(true));
+    $('btn-again').addEventListener('click', () => start(S.sim));
+    $('btn-home').addEventListener('click', backToTitle);
+    $('btn-save').addEventListener('click', saveRank);
+    $('btn-sound').addEventListener('click', toggleSound);
+    document.querySelectorAll('#mode-pick button').forEach(b => b.addEventListener('click', () => setCourse(b.dataset.mode)));
+    setCourse(course);
+    setSim(true);
+    S.item = { kind: 'word', tokens: 'hello'.split(''), text: 'hello', ja: 'こんにちは' };
+    S.tokens = S.item.tokens;
+    renderTiles('show', -1);
+    $('ja').textContent = 'こんにちは';
+    setPads(null);
+
+    let lastT = performance.now();
+    function loop(now) {
+        const dt = Math.min(0.1, Math.max(0, (now - lastT) / 1000));
+        lastT = now;
+        time += dt;
+        pollHeld();
+        update(dt);
+        render();
+        requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+</script>
+</body>
+</html>

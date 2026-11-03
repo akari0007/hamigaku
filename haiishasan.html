@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ピカピカ はっくつ クリニック</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --ink: #17324d;
+        --ink-soft: #4a6276;
+        --bg1: #dff7f1;
+        --bg2: #c6ecff;
+        --paper: #ffffff;
+        --mint: #19c3a6;
+        --mint-deep: #0e8f7a;
+        --yellow: #ffc93c;
+        --coral: #ff6f6f;
+        --pink: #ffd6de;
+        --m0: #ff8a3d;
+        --m1: #2fa8ff;
+        --m2: #a765ff;
+        --m3: #22b35e;
+        --display: 'Dela Gothic One', 'M PLUS Rounded 1c', sans-serif;
+        --gut: clamp(10px, 2vw, 24px);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+        font-family: 'M PLUS Rounded 1c', system-ui, sans-serif;
+        font-weight: 700;
+        color: var(--ink);
+        background:
+            radial-gradient(circle at 12% 18%, rgba(255, 255, 255, .7) 0 60px, transparent 61px),
+            radial-gradient(circle at 88% 82%, rgba(255, 255, 255, .55) 0 90px, transparent 91px),
+            radial-gradient(circle at 70% 10%, rgba(255, 255, 255, .5) 0 34px, transparent 35px),
+            radial-gradient(circle at 25% 90%, rgba(255, 255, 255, .45) 0 44px, transparent 45px),
+            linear-gradient(160deg, var(--bg1), var(--bg2));
+        background-attachment: fixed;
+        overflow: hidden;
+        user-select: none; -webkit-user-select: none;
+        touch-action: manipulation;
+    }
+    button { font: inherit; color: inherit; cursor: pointer; }
+    .hidden { display: none !important; }
+
+    /* ステッカー風のカード */
+    .card {
+        background: var(--paper);
+        border: 3px solid var(--ink);
+        border-radius: 26px;
+        box-shadow: 6px 6px 0 var(--ink);
+    }
+
+    #app {
+        height: 100dvh;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: clamp(8px, 1.6vh, 16px);
+        padding: max(10px, env(safe-area-inset-top)) var(--gut) max(10px, env(safe-area-inset-bottom));
+    }
+
+    /* ===== 上のバー ===== */
+    #top { display: flex; align-items: center; gap: 16px; min-width: 0; }
+    .brand { display: flex; flex-direction: column; line-height: 1.05; flex: none; }
+    .brand small { font-size: 11px; color: var(--ink-soft); letter-spacing: .1em; }
+    .brand b { font-family: var(--display); font-weight: 400; font-size: clamp(18px, 2vw, 26px); }
+    #course { flex: 1; min-width: 0; display: flex; align-items: center; padding: 10px 16px; border-radius: 999px; }
+    .cdot {
+        flex: 1; min-width: 0; height: 10px; border-radius: 5px; margin: 0 2px;
+        background: #e3edf3; border: 2px solid var(--ink); position: relative;
+    }
+    .cdot.done { background: var(--mint); }
+    .cdot.skip { background: repeating-linear-gradient(45deg, #ffe3a3 0 4px, #fff 4px 8px); }
+    .cdot.now { background: var(--yellow); height: 16px; box-shadow: 0 0 0 3px rgba(255, 201, 60, .45); }
+    #overall { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-radius: 999px; flex: none; }
+    #overall span { font-size: 12px; color: var(--ink-soft); }
+    #overall b { font-family: var(--display); font-weight: 400; font-size: 24px; }
+    .meter { width: clamp(60px, 8vw, 120px); height: 12px; border-radius: 6px; border: 2px solid var(--ink); overflow: hidden; background: #e3edf3; }
+    .meter i { display: block; height: 100%; width: 0; background: var(--mint); transition: width .3s; }
+    .icon-btn {
+        flex: none; width: 46px; height: 46px; border-radius: 50%;
+        background: var(--paper); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink);
+        font-size: 18px; display: grid; place-items: center;
+    }
+    .icon-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+
+    /* ===== メイン ===== */
+    main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
+        gap: clamp(12px, 2vw, 24px);
+        min-height: 0;
+    }
+    #stage { position: relative; min-height: 0; overflow: hidden; background: #fff4ec; display: flex; flex-direction: column; }
+    .stage-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px 0; font-size: 13px; color: var(--ink-soft); }
+    .mirror-tag { background: var(--pink); border: 2px solid var(--ink); border-radius: 999px; padding: 2px 12px; color: var(--ink); }
+    #mouth { flex: 1; min-height: 0; position: relative; }
+    #mouth > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+    /* 口の中の部品 */
+    .grime { transition: opacity .25s; }
+    .germ-body { transform-box: fill-box; transform-origin: center; animation: wobble 1.2s ease-in-out infinite; }
+    .germ:nth-child(3n) .germ-body { animation-duration: 1.5s; }
+    .germ:nth-child(3n+1) .germ-body { animation-duration: .95s; }
+    @keyframes wobble { 0%, 100% { transform: rotate(-8deg) scale(1); } 50% { transform: rotate(8deg) scale(1.08, .94); } }
+    .germ.scared .germ-body { animation: scared .18s linear infinite; }
+    @keyframes scared { 0%, 100% { transform: translate(-1.5px, 0); } 50% { transform: translate(1.5px, 0); } }
+    .germ { transition: opacity .3s; }
+    .germ.gone { opacity: 0; }
+    .zone-glow { fill: none; stroke: #ffd23f; stroke-width: 7; stroke-linecap: round; stroke-dasharray: 2 12; opacity: 0; animation: march .6s linear infinite; }
+    .zone-glow.on { opacity: 1; }
+    @keyframes march { to { stroke-dashoffset: -14; } }
+    .zone-ring { fill: none; stroke: #ffd23f; stroke-width: 4; opacity: 0; transform-box: fill-box; transform-origin: center; }
+    .zone-ring.on { opacity: 1; animation: ring 1s ease-out infinite; }
+    @keyframes ring { 0% { transform: scale(.6); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+    .sparkle { opacity: 0; transform-box: fill-box; transform-origin: center; }
+    .sparkle.on { animation: twinkle 1.8s ease-in-out infinite; }
+    .tooth:nth-child(2n) .sparkle.on { animation-delay: .6s; }
+    .tooth:nth-child(3n) .sparkle.on { animation-delay: 1.2s; }
+    @keyframes twinkle { 0%, 70%, 100% { opacity: 0; transform: scale(.3); } 80% { opacity: 1; transform: scale(1.1); } }
+    .treasure { transition: opacity .3s; }
+    .treasure.collected { opacity: 0 !important; }
+    .treasure .tr-in { transform-box: fill-box; transform-origin: center; }
+    .treasure.found .tr-in { animation: found .9s cubic-bezier(.2, 1.6, .4, 1); }
+    @keyframes found { 0% { transform: scale(1); } 40% { transform: scale(2.6) translateY(-6px); } 100% { transform: scale(2.2) translateY(-8px); } }
+
+    #side { display: flex; flex-direction: column; gap: clamp(12px, 2vh, 20px); min-height: 0; }
+
+    /* ===== コーチ ===== */
+    #coach { flex: 1; min-height: 0; padding: clamp(10px, 1.6vh, 20px) clamp(12px, 1.4vw, 20px); display: flex; flex-direction: column; gap: clamp(4px, 1vh, 12px); overflow-y: auto; }
+    .coach-head { display: flex; gap: 12px; align-items: flex-start; }
+    .coach-face { width: clamp(38px, min(4.6vw, 6.5vh), 64px); flex: none; }
+    .coach-face svg { width: 100%; display: block; }
+    .coach-face.talk svg { animation: talk .35s ease-in-out 3; }
+    @keyframes talk { 50% { transform: translateY(-4px) rotate(-3deg); } }
+    #bubble {
+        position: relative; flex: 1; padding: clamp(5px, 0.9vh, 10px) 12px; border-radius: 16px;
+        background: #eaf8ff; border: 2px solid var(--ink);
+        font-size: clamp(12px, min(1.2vw, 1.9vh), 16px); line-height: 1.45; min-height: 2.4em;
+        display: flex; align-items: center;
+    }
+    #bubble::before {
+        content: ""; position: absolute; left: -11px; top: 12px; width: 16px; height: 16px;
+        background: #eaf8ff; border-left: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg);
+    }
+    .step-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .step { font-family: var(--display); font-size: clamp(11px, 1.6vh, 13px); color: var(--mint-deep); letter-spacing: .08em; }
+    .round-tag { font-size: 12px; padding: 2px 10px; border-radius: 999px; background: #ffe3a3; border: 2px solid var(--ink); }
+    #zone-name { font-family: var(--display); font-size: clamp(16px, min(1.8vw, 2.9vh), 26px); line-height: 1.25; }
+    #zone-hint { font-size: clamp(11px, 1.6vh, 13px); color: var(--coral); }
+
+    .motion-row { display: flex; gap: 12px; align-items: center; }
+    .demo {
+        flex: none; width: clamp(64px, min(7vw, 10vh), 108px); aspect-ratio: 4 / 3; border-radius: 14px;
+        background: color-mix(in srgb, var(--c) 16%, #fff); border: 2px solid var(--ink); overflow: hidden;
+    }
+    .demo svg { width: 100%; height: 100%; display: block; }
+    .demo-brush { transform-box: view-box; transform-origin: 60px 45px; }
+    .demo[data-m="0"] .demo-brush { animation: dm0 .5s ease-in-out infinite; }
+    .demo[data-m="1"] .demo-brush { animation: dm1 .5s ease-in-out infinite; }
+    .demo[data-m="2"] .demo-brush { animation: dm2 .9s linear infinite; }
+    .demo[data-m="3"] .demo-brush { animation: dm3 .6s ease-in-out infinite; }
+    @keyframes dm0 { 0%, 100% { transform: translateY(-10px); } 50% { transform: translateY(10px); } }
+    @keyframes dm1 { 0%, 100% { transform: translateX(-12px); } 50% { transform: translateX(12px); } }
+    @keyframes dm2 { from { transform: rotate(0) translateX(9px) rotate(0); } to { transform: rotate(360deg) translateX(9px) rotate(-360deg); } }
+    @keyframes dm3 { 0%, 100% { transform: rotate(-35deg) translateY(-4px); } 50% { transform: rotate(-35deg) translateY(6px); } }
+    .motion-name { font-family: var(--display); font-size: clamp(17px, min(2vw, 3.1vh), 28px); color: var(--c); -webkit-text-stroke: 1px var(--ink); }
+    .motion-name i { font-style: normal; display: inline-grid; place-items: center; width: 1.3em; height: 1.3em; border-radius: 50%; background: var(--c); color: #fff; -webkit-text-stroke: 0; margin-right: 6px; font-size: .8em; vertical-align: .1em; }
+    .motion-sub { font-size: clamp(11px, 1.6vh, 13px); color: var(--ink-soft); }
+
+    .gauge-row { display: flex; align-items: center; gap: 14px; }
+    .ring { position: relative; width: clamp(72px, min(8.5vw, 13vh), 124px); aspect-ratio: 1; flex: none; }
+    .ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+    .ring .bg { fill: none; stroke: #e3edf3; stroke-width: 12; }
+    .ring .fg { fill: none; stroke: var(--mint); stroke-width: 12; stroke-linecap: round; stroke-dasharray: 289.03; transition: stroke .2s; }
+    .ring.idle .fg { stroke: #f4b63f; }
+    .ring-in { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; line-height: 1; }
+    .ring-in small { display: block; font-size: 11px; color: var(--ink-soft); }
+    #sec { font-family: var(--display); font-size: clamp(24px, min(3vw, 4.6vh), 44px); }
+    #status {
+        flex: 1; padding: clamp(6px, 1.2vh, 12px) 12px; border-radius: 16px; border: 2px dashed var(--ink-soft);
+        font-size: clamp(13px, min(1.4vw, 2.2vh), 18px); line-height: 1.45; text-align: center;
+    }
+    #status.good { border: 2px solid var(--mint); background: #e2fbf5; color: var(--mint-deep); }
+    #status.warn { border: 2px solid var(--coral); background: #fff0f0; color: #c93c3c; }
+    #status.done { border: 2px solid var(--yellow); background: #fff7dc; }
+    .coach-foot { margin-top: auto; display: flex; gap: 8px; justify-content: flex-end; }
+    .ghost { border: 2px solid var(--ink-soft); background: transparent; border-radius: 999px; padding: 4px 12px; font-size: 12px; color: var(--ink-soft); }
+    .ghost:hover { background: rgba(0, 0, 0, .04); }
+
+    /* ===== たからもの ===== */
+    #shelf { padding: clamp(8px, 1.2vh, 12px) 14px; flex: none; }
+    #shelf h3 { margin: 0 0 6px; font-size: 13px; display: flex; justify-content: space-between; }
+    #shelf h3 b { font-family: var(--display); font-weight: 400; }
+    #slots { display: grid; gap: clamp(4px, 0.8vh, 8px); }
+    .idiom { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: center; }
+    .tiles { display: grid; grid-template-columns: repeat(4, clamp(24px, min(2.4vw, 3.8vh), 38px)); gap: 4px; }
+    .idiom-info { font-size: 11px; line-height: 1.4; color: var(--ink-soft); min-width: 0; }
+    .idiom-info b { display: block; color: var(--ink); font-size: 14px; }
+    .idiom.done .tiles .slot { background: #ffe9a8; }
+    .idiom.done .idiom-info b { color: var(--mint-deep); }
+    .slot {
+        aspect-ratio: 1; border-radius: 12px; background: #f1f5f8; border: 2px dashed #b8c7d3;
+        display: grid; place-items: center; color: #b8c7d3; font-size: 14px; position: relative;
+    }
+    .slot svg { width: 80%; height: 80%; }
+    .slot.got { background: #fff7dc; border: 2px solid var(--ink); animation: slotPop .5s cubic-bezier(.2, 1.6, .4, 1); }
+    @keyframes slotPop { 0% { transform: scale(.4); } 100% { transform: none; } }
+    .fly { position: fixed; z-index: 70; pointer-events: none; transition: left .9s cubic-bezier(.5, -0.3, .4, 1), top .9s cubic-bezier(.5, -0.3, .4, 1), width .9s, height .9s; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .25)); }
+    .fly svg { width: 100%; height: 100%; }
+
+    /* ===== テスト用ボタン ===== */
+    #controls { display: none; gap: 10px; align-items: stretch; }
+    body.sim #controls { display: flex; }
+    .mbtn {
+        flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px;
+        background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 4px 4px 0 var(--ink);
+        font-size: 15px; touch-action: none;
+    }
+    .mbtn i { font-style: normal; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: #fff; font-size: 18px; }
+    .mbtn small { color: var(--ink-soft); font-size: 11px; }
+    .mbtn.on { background: color-mix(in srgb, var(--c) 22%, #fff); transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+
+    /* ===== オーバーレイ ===== */
+    .overlay {
+        position: fixed; inset: 0; z-index: 50; display: flex; overflow-y: auto;
+        padding: 24px var(--gut); background: rgba(23, 50, 77, .45); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    }
+    .overlay > .card { margin: auto; width: min(860px, 100%); padding: clamp(20px, 3vw, 40px); text-align: center; animation: pop .45s cubic-bezier(.2, 1.4, .4, 1); }
+    @keyframes pop { from { transform: scale(.9); opacity: 0; } }
+    .kicker { display: inline-block; font-size: 13px; padding: 4px 14px; border-radius: 999px; background: var(--pink); border: 2px solid var(--ink); }
+    .overlay h1, .overlay h2 { font-family: var(--display); font-weight: 400; margin: 12px 0 8px; line-height: 1.2; }
+    .overlay h1 { font-size: clamp(34px, 5.4vw, 64px); }
+    .overlay h1 em { font-style: normal; color: var(--mint); -webkit-text-stroke: 2px var(--ink); }
+    .overlay h2 { font-size: clamp(28px, 4vw, 48px); }
+    .lead { font-size: clamp(15px, 1.7vw, 19px); line-height: 1.7; color: var(--ink-soft); margin: 0 0 20px; }
+    .btn {
+        border: 3px solid var(--ink); border-radius: 999px; padding: 14px 28px; font-size: clamp(16px, 1.7vw, 20px); font-weight: 800;
+        box-shadow: 4px 4px 0 var(--ink); background: var(--paper);
+    }
+    .btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+    .btn.primary { background: var(--mint); color: #fff; -webkit-text-stroke: .5px var(--ink); }
+    .btn-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .tips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 24px; text-align: left; }
+    .tip { padding: 12px 14px; border-radius: 18px; background: #f3fbff; border: 2px solid var(--ink); font-size: 13px; line-height: 1.6; color: var(--ink-soft); }
+    .tip b { display: block; color: var(--ink); font-size: 15px; }
+
+    #count { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; pointer-events: none; }
+    #count span {
+        font-family: var(--display); font-size: clamp(120px, 20vw, 240px); color: var(--yellow);
+        -webkit-text-stroke: 6px var(--ink); paint-order: stroke fill; animation: countIn .8s ease-out;
+    }
+    @keyframes countIn { 0% { transform: scale(2); opacity: 0; } 30% { transform: scale(1); opacity: 1; } 100% { transform: scale(.9); opacity: .9; } }
+
+    #banner {
+        position: fixed; left: 50%; top: 40%; z-index: 55; transform: translate(-50%, -50%);
+        padding: 18px 40px; text-align: center; pointer-events: none;
+    }
+    #banner b { display: block; font-family: var(--display); font-weight: 400; font-size: clamp(28px, 4vw, 48px); }
+    #banner span { font-size: 15px; color: var(--ink-soft); }
+
+    #toast {
+        position: fixed; left: 50%; bottom: 24px; z-index: 80; transform: translate(-50%, 20px); opacity: 0; transition: .3s;
+        padding: 10px 20px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 14px; pointer-events: none; max-width: 90vw; text-align: center;
+    }
+    #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    .mode-pick { display: grid; grid-template-columns: 1.8fr 1fr; align-items: center; gap: 12px; max-width: 460px; margin: 0 auto 18px; }
+    .mode-pick button { display: flex; flex-direction: column; align-items: center; padding: 10px; border-radius: 18px; background: #fff; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+    .mode-pick b { font-family: var(--display); font-weight: 400; font-size: 22px; letter-spacing: .08em; }
+    .mode-pick small { font-size: 12px; color: var(--ink-soft); }
+    .mode-pick button.on { background: var(--mint); color: #fff; }
+    .mode-pick button.on small { color: #e9fffb; }
+    /* 2分（BASIC）がメイン、1分（FAST）はおまけ */
+    .mode-pick button[data-mode="basic"] { padding: 16px 10px; }
+    .mode-pick button[data-mode="basic"] b { font-size: 30px; }
+    .mode-pick button[data-mode="basic"] small { font-size: 14px; }
+    .mode-pick button[data-mode="fast"] { padding: 6px; }
+    .mode-pick button[data-mode="fast"] b { font-size: 15px; }
+    .mode-pick button[data-mode="fast"] small { font-size: 11px; }
+
+    /* 結果 */
+    .ba { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; margin: 10px 0 16px; }
+    .ba figure { margin: 0; }
+    .ba figcaption { font-family: var(--display); font-size: 14px; margin-bottom: 4px; }
+    .ba .mini { aspect-ratio: 400 / 440; max-height: 34vh; margin: 0 auto; border-radius: 18px; border: 2px solid var(--ink); background: #fff4ec; overflow: hidden; }
+    .ba .mini svg { width: 100%; height: 100%; display: block; }
+    .ba .arrow { font-family: var(--display); font-size: 30px; color: var(--mint); }
+    .stars { font-size: 40px; letter-spacing: 6px; color: var(--yellow); -webkit-text-stroke: 1.5px var(--ink); margin: 4px 0; }
+    .res-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .res-stats div { padding: 10px; border-radius: 16px; background: #f3fbff; border: 2px solid var(--ink); }
+    .res-stats span { display: block; font-size: 12px; color: var(--ink-soft); }
+    .res-stats b { font-family: var(--display); font-weight: 400; font-size: 24px; }
+    #res-treasures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; text-align: left; }
+    .ri { padding: 12px 14px; border-radius: 16px; background: #fff7dc; border: 2px solid var(--ink); font-size: 13px; line-height: 1.5; }
+    .ri .w { font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', serif; font-weight: 900; font-size: 28px; letter-spacing: .08em; }
+    .ri .r { color: var(--mint-deep); font-size: 12px; }
+    .ri.none { background: #f1f5f8; border-style: dashed; color: #8a9aa7; }
+    .rt { padding: 6px 4px; border-radius: 14px; background: #fff7dc; border: 2px solid var(--ink); font-size: 11px; }
+    .rt svg { width: 44px; height: 44px; display: block; margin: 0 auto; }
+    .rt.none { background: #f1f5f8; border-style: dashed; color: #9aaab7; }
+
+    /* ===== せまい画面（スマホ・タブレットの たて もち） ===== */
+    /* みがいている あいだは スクロール できないので、ぜんぶ 1画面に おさめる */
+    @media (max-width: 900px) and (orientation: portrait) {
+        main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1.1fr) minmax(0, 1fr); }
+        #stage-note { display: none; }
+        .brand { display: none; }
+        #overall span { display: none; }
+        #controls { display: none; gap: 8px; }
+        body.sim #controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .mbtn { flex-direction: column; justify-content: center; gap: 4px; padding: 8px 4px; text-align: center; font-size: 12px; }
+        .mbtn small, .mbtn br { display: none; }
+        .tips { grid-template-columns: 1fr; }
+        #res-treasures { grid-template-columns: 1fr; }
+    }
+    /* たて もちの スマホ：コーチの かおを けして、だいじな ところ（場所・みがきかた・のこり秒）を のこす */
+    @media (max-width: 600px) and (orientation: portrait) {
+        #app { gap: 8px; }
+        #top { gap: 8px; }
+        #course { padding: 8px 10px; }
+        #overall { padding: 6px 10px; }
+        #overall b { font-size: 18px; }
+        .meter { display: none; }
+        .icon-btn { width: 38px; height: 38px; }
+        #side { gap: 8px; }
+        main { grid-template-rows: minmax(0, 1fr) auto; }
+        .coach-face, #zone-hint { display: none; }
+        #coach { flex: none; overflow: visible; }
+        /* 四字熟語の たなは 1れつに ならべて、文字の せつめいは けす */
+        #shelf { padding: 6px 10px; }
+        #shelf h3 { margin-bottom: 4px; font-size: 12px; }
+        #slots { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+        .idiom { display: block; }
+        .idiom-info { display: none; }
+        .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; }
+        .slot { border-radius: 6px; }
+    }
+    /* せの ひくい スマホ（iPhone SE など）：ふきだしを けして、ボタンも ちいさく */
+    @media (max-width: 600px) and (max-height: 720px) and (orientation: portrait) {
+        .coach-head { display: none; }
+        #coach { padding: 8px 10px; gap: 4px; }
+        .mbtn { padding: 5px 2px; gap: 2px; }
+        .mbtn i { width: 26px; height: 26px; font-size: 14px; }
+    }
+    /* よこ もちの スマホ（せが ひくい）：デスクトップと おなじ 2れつの まま、ちいさく つめる */
+    @media (max-height: 560px) and (orientation: landscape) {
+        #app { gap: 6px; padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+        main { grid-template-columns: minmax(0, 1fr) minmax(260px, 1fr); gap: 8px; }
+        .brand, #stage-note, #overall span, .meter { display: none; }
+        #course { padding: 6px 10px; }
+        #overall { padding: 4px 10px; }
+        #overall b { font-size: 18px; }
+        .icon-btn { width: 36px; height: 36px; }
+        .stage-head { padding: 6px 10px 0; }
+        #side { gap: 6px; }
+        .coach-face, #zone-hint, #shelf { display: none; }
+        #coach { padding: 8px 10px; gap: 4px; }
+        .mbtn { padding: 6px 8px; font-size: 12px; }
+        .mbtn small, .mbtn br { display: none; }
+        .mbtn i { width: 26px; height: 26px; font-size: 14px; }
+    }
+</style>
+</head>
+<body>
+
+<!-- 共有の定義（フィルター・グラデーション） -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+        <filter id="plaque" x="-30%" y="-30%" width="160%" height="160%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.22" numOctaves="2" seed="4" result="n"/>
+            <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G" result="d"/>
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="11" result="s"/>
+            <feColorMatrix in="s" type="matrix" values="0 0 0 0 .38  0 0 0 0 .27  0 0 0 0 .08  0 0 0 -3 1.75" result="spots"/>
+            <feComposite in="spots" in2="d" operator="in" result="spotsIn"/>
+            <feMerge><feMergeNode in="d"/><feMergeNode in="spotsIn"/></feMerge>
+        </filter>
+        <linearGradient id="gTooth" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6edf3"/></linearGradient>
+        <linearGradient id="gPlaque" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3c45a"/><stop offset="1" stop-color="#b98b2e"/></linearGradient>
+        <radialGradient id="gPearl" cx="35%" cy="35%"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#fde7ef"/><stop offset="1" stop-color="#e8b9cc"/></radialGradient>
+        <linearGradient id="gRainbow" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6b6b"/><stop offset=".25" stop-color="#ffd93d"/><stop offset=".5" stop-color="#6bcb77"/><stop offset=".75" stop-color="#4d96ff"/><stop offset="1" stop-color="#b06bff"/></linearGradient>
+        <linearGradient id="gGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe680"/><stop offset="1" stop-color="#f2a900"/></linearGradient>
+    </defs>
+</svg>
+
+<div id="app">
+    <header id="top">
+        <div class="brand"><small>はいしゃさんの</small><b>ピカピカ はっくつ</b></div>
+        <div id="course" class="card"></div>
+        <div id="overall" class="card"><span>ピカピカど</span><b id="overall-n">0</b>%<div class="meter"><i id="overall-fill"></i></div></div>
+        <button class="icon-btn" id="btn-sound" title="おと（M）">🔊</button>
+    </header>
+
+    <main>
+        <section id="stage" class="card">
+            <div class="stage-head"><span class="mirror-tag">かがみと おなじ むき</span><span id="stage-note">みがいて 四字熟語の 漢字を ほりだそう</span></div>
+            <div id="mouth"></div>
+        </section>
+
+        <aside id="side">
+            <div id="coach" class="card">
+                <div class="coach-head">
+                    <div class="coach-face" id="coach-face">
+                        <svg viewBox="0 0 100 100" aria-label="デンタせんせい">
+                            <path d="M20 32 Q19 10 40 11 Q50 15 60 11 Q81 10 80 32 Q80 54 74 72 Q70 93 62 93 Q56 93 55 78 Q50 68 45 78 Q44 93 38 93 Q30 93 26 72 Q20 54 20 32Z" fill="#fff" stroke="#17324d" stroke-width="3.5"/>
+                            <path d="M22 26 Q50 12 78 26" stroke="#17324d" stroke-width="4" fill="none"/>
+                            <circle cx="50" cy="16" r="10" fill="#bfe7ff" stroke="#17324d" stroke-width="3"/>
+                            <circle cx="46.5" cy="12.5" r="3" fill="#fff"/>
+                            <ellipse cx="39" cy="44" rx="4.2" ry="5.8" fill="#17324d"/><ellipse cx="61" cy="44" rx="4.2" ry="5.8" fill="#17324d"/>
+                            <circle cx="40.5" cy="42" r="1.5" fill="#fff"/><circle cx="62.5" cy="42" r="1.5" fill="#fff"/>
+                            <circle cx="30" cy="54" r="5" fill="#ffb4b4"/><circle cx="70" cy="54" r="5" fill="#ffb4b4"/>
+                            <path d="M42 55 Q50 64 58 55Z" fill="#ff8a8a" stroke="#17324d" stroke-width="3" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div id="bubble">こんにちは！ デンタせんせい だよ。</div>
+                </div>
+                <div class="step-row"><span class="step" id="step">STEP 1 / 16</span><span class="round-tag hidden" id="round-tag">みがきのこし チェック</span></div>
+                <div>
+                    <div id="zone-name">上の歯・みぎの奥歯（そとがわ）</div>
+                    <div id="zone-hint"></div>
+                </div>
+                <div class="motion-row" id="motion-row" style="--c: var(--m1)">
+                    <div class="demo" id="demo" data-m="1" style="--c: var(--m1)">
+                        <svg viewBox="0 0 120 90">
+                            <path d="M40 20 Q40 7 52 8 Q60 12 68 8 Q80 7 80 20 Q80 38 76 54 Q73 72 67 72 Q62 72 61 60 Q60 52 59 60 Q58 72 53 72 Q47 72 44 54 Q40 38 40 20Z" fill="#fff" stroke="#17324d" stroke-width="2.5"/>
+                            <g class="demo-brush">
+                                <rect x="62" y="44" width="40" height="9" rx="4.5" fill="#19c3a6" stroke="#17324d" stroke-width="2" transform="rotate(28 62 48)"/>
+                                <rect x="46" y="34" width="22" height="16" rx="5" fill="#e9fffb" stroke="#17324d" stroke-width="2"/>
+                                <path d="M49 34 v-6 M53 34 v-6 M57 34 v-6 M61 34 v-6 M65 34 v-6" stroke="#2fa8ff" stroke-width="2.5" stroke-linecap="round"/>
+                                <circle cx="52" cy="26" r="2.5" fill="#fff" stroke="#9adff5"/><circle cx="62" cy="25" r="2" fill="#fff" stroke="#9adff5"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="motion-name" id="motion-name"><i>↔</i>よこみがき</div>
+                        <div class="motion-sub" id="motion-sub">キー ←→</div>
+                    </div>
+                </div>
+                <div class="gauge-row">
+                    <div class="ring idle" id="ring">
+                        <svg viewBox="0 0 110 110"><circle class="bg" cx="55" cy="55" r="46"/><circle class="fg" id="ring-fg" cx="55" cy="55" r="46"/></svg>
+                        <div class="ring-in"><div><small>あと</small><span id="sec">5</span><small>びょう</small></div></div>
+                    </div>
+                    <div id="status">みがいてね！</div>
+                </div>
+                <div class="coach-foot">
+                    <button class="ghost" id="btn-skip">あとで みがく</button>
+                    <button class="ghost" id="btn-end">おわる</button>
+                </div>
+            </div>
+            <div id="shelf" class="card">
+                <h3><span>ほりだした 四字熟語</span><span><b id="treasure-n">0</b> / 3</span></h3>
+                <div id="slots"></div>
+            </div>
+        </aside>
+    </main>
+
+    <footer id="controls">
+        <button class="mbtn" data-m="0" style="--c: var(--m0)"><i>↕</i><span>たてみがき<br><small>キー ↑↓</small></span></button>
+        <button class="mbtn" data-m="1" style="--c: var(--m1)"><i>↔</i><span>よこみがき<br><small>キー ←→</small></span></button>
+        <button class="mbtn" data-m="2" style="--c: var(--m2)"><i>↻</i><span>ぐるぐるみがき<br><small>キー C</small></span></button>
+        <button class="mbtn" data-m="3" style="--c: var(--m3)"><i>⤵</i><span>うちがわみがき<br><small>キー G</small></span></button>
+    </footer>
+</div>
+
+<!-- タイトル -->
+<div id="title" class="overlay">
+    <div class="card">
+        <span class="kicker">はいしゃさんの はみがき アドベンチャー</span>
+        <h1>ピカピカ <em>はっくつ</em><br>クリニック</h1>
+        <p class="lead">たいへん！ おくちの なかが バイキンと よごれで いっぱい！<br>デンタせんせいと いっしょに 1かしょずつ みがいて、<br>よごれの したに かくれた 漢字を ほりだして、四字熟語を かんせいさせよう！</p>
+        <div class="mode-pick" id="mode-pick">
+            <button data-mode="basic"><b>BASIC</b><small>2ふん・ていねいに</small></button>
+            <button data-mode="fast"><b>FAST</b><small>1ぷん・いそぐ ときに</small></button>
+        </div>
+        <div class="btn-row">
+            <button class="btn primary" id="btn-bt">micro:bit で はじめる</button>
+            <button class="btn" id="btn-sim">テストモード</button>
+        </div>
+        <div class="tips">
+            <div class="tip"><b>🪞 かがみの まえで</b>がめんの おくちは かがみと おなじ むき。じぶんの みぎが がめんの みぎ だよ。</div>
+            <div class="tip"><b>📜 四字熟語を はっくつ</b>1かしょ ピカピカに すると 漢字が 1文字 でてくるよ。4文字 そろうと 四字熟語の いみが わかる！</div>
+            <div class="tip"><b>💎 みがきのこし ゼロ</b>とばした ところは さいごに もういちど。ぜんぶ ピカピカに なるまで いっしょ だよ。</div>
+        </div>
+    </div>
+</div>
+
+<!-- けっか -->
+<div id="result" class="overlay hidden">
+    <div class="card">
+        <span class="kicker">ピカピカ しょうめいしょ</span>
+        <h2 id="res-title">ぜんぶ ピカピカ！</h2>
+        <div class="stars" id="res-stars">★★★</div>
+        <div class="ba">
+            <figure><figcaption>BEFORE</figcaption><div class="mini" id="mini-before"></div></figure>
+            <div class="arrow">▶</div>
+            <figure><figcaption>AFTER</figcaption><div class="mini" id="mini-after"></div></figure>
+        </div>
+        <div class="res-stats">
+            <div><span>ピカピカど</span><b id="res-pct">100%</b></div>
+            <div><span>ただしく みがいた じかん</span><b id="res-good">2:00</b></div>
+            <div><span>四字熟語</span><b id="res-tr">3 / 3</b></div>
+        </div>
+        <div id="res-treasures"></div>
+        <p class="lead" id="res-msg"></p>
+        <div class="btn-row">
+            <button class="btn primary" id="btn-again">もういちど</button>
+            <button class="btn" id="btn-home">タイトルへ</button>
+        </div>
+    </div>
+</div>
+
+<div id="count" class="hidden"><span id="count-n">3</span></div>
+<div id="banner" class="card hidden"><b id="banner-big"></b><span id="banner-sub"></span></div>
+<div id="toast"></div>
+
+<script>
+    const $ = id => document.getElementById(id);
+
+    /* =========================================================
+       みがく場所と みがきかた（mainapp.html と同じ 16か所・120秒）
+       ========================================================= */
+    // micro:bit から届く値: "0"=たて "1"=よこ "2"=ぐるぐる "3"=うちがわ
+    const MOTIONS = [
+        { name: 'たてみがき',     short: 'たて',     icon: '↕', color: 'var(--m0)', key: 'キー ↑↓' },
+        { name: 'よこみがき',     short: 'よこ',     icon: '↔', color: 'var(--m1)', key: 'キー ←→' },
+        { name: 'ぐるぐるみがき', short: 'ぐるぐる', icon: '↻', color: 'var(--m2)', key: 'キー C' },
+        { name: 'うちがわみがき', short: 'うちがわ', icon: '⤵', color: 'var(--m3)', key: 'キー G' }
+    ];
+
+    const ZONES = {
+        1:  { jaw: '上', part: 'みぎの奥歯',   face: 'そとがわ' },
+        2:  { jaw: '上', part: '前歯',         face: 'そとがわ' },
+        3:  { jaw: '上', part: 'ひだりの奥歯', face: 'そとがわ' },
+        4:  { jaw: '上', part: 'ひだりの奥歯', face: 'うちがわ' },
+        5:  { jaw: '上', part: '前歯',         face: 'うちがわ' },
+        6:  { jaw: '上', part: 'みぎの奥歯',   face: 'うちがわ' },
+        7:  { jaw: '下', part: 'みぎの奥歯',   face: 'そとがわ' },
+        8:  { jaw: '下', part: '前歯',         face: 'そとがわ' },
+        9:  { jaw: '下', part: 'ひだりの奥歯', face: 'そとがわ' },
+        10: { jaw: '下', part: 'ひだりの奥歯', face: 'うちがわ' },
+        11: { jaw: '下', part: '前歯',         face: 'うちがわ' },
+        12: { jaw: '下', part: 'みぎの奥歯',   face: 'うちがわ' }
+    };
+
+    function makeTasks() {
+        const list = [];
+        for (let z = 1; z <= 12; z++) {
+            if ([4, 5, 6, 10, 11, 12].includes(z)) {
+                list.push({ zones: [z], motion: 3, need: 10 });
+            } else if ([1, 3, 7, 9].includes(z)) {
+                if (z === 1) list.push({ zones: [1, 7], motion: 2, need: 10, label: 'みぎの奥歯（上と下・そとがわ）' });
+                if (z === 3) list.push({ zones: [3, 9], motion: 2, need: 10, label: 'ひだりの奥歯（上と下・そとがわ）' });
+                list.push({ zones: [z], motion: 1, need: 5 });
+            } else {
+                list.push({ zones: [z], motion: 0, need: 5 });
+                list.push({ zones: [z], motion: 1, need: 5, hint: '歯ぐきの あたりを やさしく' });
+            }
+        }
+        return list.map((t, i) => ({ ...t, idx: i, done: 0, skipped: 0 }));
+    }
+
+    function taskLabel(t) {
+        if (t.label) return t.label;
+        const d = ZONES[t.zones[0]];
+        return `${d.jaw}の歯・${d.part}（${d.face}）`;
+    }
+
+    /* =========================================================
+       四字熟語（1か所みがくと 1文字 ほりだせる。4か所で 1つの 四字熟語）
+       ========================================================= */
+    const IDIOMS = [
+        { w: '一石二鳥', r: 'いっせきにちょう', m: '1つのことをして、2つの得をすること。' },
+        { w: '十人十色', r: 'じゅうにんといろ', m: '好みや考え方は、人によって それぞれ ちがうこと。' },
+        { w: '一期一会', r: 'いちごいちえ', m: '一生に一度の出会いだと思って、人との時間を大切にすること。' },
+        { w: '七転八起', r: 'しちてんはっき', m: '何度失敗しても、あきらめずに立ち上がること。' },
+        { w: '以心伝心', r: 'いしんでんしん', m: 'ことばにしなくても、気持ちが通じ合うこと。' },
+        { w: '自業自得', r: 'じごうじとく', m: '自分のしたことの結果を、自分が受けること。' },
+        { w: '有言実行', r: 'ゆうげんじっこう', m: '口に出して言ったことを、必ずやりとげること。' },
+        { w: '一生懸命', r: 'いっしょうけんめい', m: '全力で物事にとりくむこと。' },
+        { w: '異口同音', r: 'いくどうおん', m: 'たくさんの人が、口をそろえて同じことを言うこと。' },
+        { w: '起承転結', r: 'きしょうてんけつ', m: '話や文章の組み立て方。はじまり・つづき・変化・まとめ。' },
+        { w: '温故知新', r: 'おんこちしん', m: '昔のことをよく学んで、新しい知識や考えを得ること。' },
+        { w: '大器晩成', r: 'たいきばんせい', m: '大物は、時間をかけて ゆっくり大きく育つということ。' },
+        { w: '単刀直入', r: 'たんとうちょくにゅう', m: '前置きなしに、いきなり大事な話に入ること。' },
+        { w: '五里霧中', r: 'ごりむちゅう', m: '手がかりがなく、どうしたらよいか わからないこと。' },
+        { w: '半信半疑', r: 'はんしんはんぎ', m: '半分は信じて、半分はうたがっていること。' },
+        { w: '適材適所', r: 'てきざいてきしょ', m: 'その人の力に合った役目や仕事につけること。' },
+        { w: '電光石火', r: 'でんこうせっか', m: 'いなずまや火花のように、とても すばやいこと。' },
+        { w: '日進月歩', r: 'にっしんげっぽ', m: '日ごと月ごとに、どんどん進歩すること。' },
+        { w: '臨機応変', r: 'りんきおうへん', m: 'その場のようすに合わせて、うまく対応すること。' },
+        { w: '一心不乱', r: 'いっしんふらん', m: '1つのことに集中して、ほかのことに気をとられないこと。' },
+        { w: '針小棒大', r: 'しんしょうぼうだい', m: '針のように小さなことを、棒のように大げさに言うこと。' },
+        { w: '油断大敵', r: 'ゆだんたいてき', m: '気をゆるめることが、いちばんの敵だということ。' },
+        { w: '三寒四温', r: 'さんかんしおん', m: '寒い日が3日、暖かい日が4日くらい くり返す、冬から春の天気。' },
+        { w: '千差万別', r: 'せんさばんべつ', m: 'たくさんのものが、1つ1つ みんな ちがうこと。' },
+        { w: '四苦八苦', r: 'しくはっく', m: 'とても苦労すること。' },
+        { w: '百発百中', r: 'ひゃっぱつひゃくちゅう', m: 'ねらいや予想が、すべて当たること。' },
+        { w: '天真爛漫', r: 'てんしんらんまん', m: 'かざらず、むじゃきで明るいこと。' },
+        { w: '自画自賛', r: 'じがじさん', m: '自分で自分のことをほめること。' },
+        { w: '一網打尽', r: 'いちもうだじん', m: '悪いものを、一度にぜんぶ つかまえること。' },
+        { w: '危機一髪', r: 'ききいっぱつ', m: 'ほんの少しのところで、大きな危険に なりそうな あぶない状態。' }
+    ];
+    // 4か所ずつで 1つの四字熟語（みがく じゅんばんに そろっていく）
+    const ZONE_GROUPS = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]];
+    let IDIOM_SET = [];        // このゲームの 3つ
+    const KANJI = {};          // zone → 漢字1文字
+
+    function pickIdioms() {
+        const pool = IDIOMS.slice();
+        IDIOM_SET = [];
+        for (let i = 0; i < 3; i++) IDIOM_SET.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+        ZONE_GROUPS.forEach((g, i) => g.forEach((z, k) => { KANJI[z] = IDIOM_SET[i].w[k]; }));
+    }
+    const groupOf = z => ZONE_GROUPS.findIndex(g => g.includes(z));
+
+    // ほりだす 漢字の タイル（中心 0,0・はば 約 24）
+    function treasureArt(z) {
+        return `<rect x="-11.5" y="-11.5" width="23" height="23" rx="4" fill="url(#gGold)" stroke="#17324d" stroke-width="1.6"/>
+            <text y="6.5" text-anchor="middle" font-size="17" font-weight="900" fill="#17324d" font-family="'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif">${KANJI[z]}</text>`;
+    }
+
+    /* =========================================================
+       口の絵（上から見た 歯ならび。角度は PDF の向き → 左右反転して かがみの向きにする）
+       ========================================================= */
+    const W = 400;
+    const JAW = {
+        U: { cx: 200, cy: 206, rx: 126, ry: 120, arcs: [[1, 6, 180, 240], [2, 5, 240, 300], [3, 4, 300, 360]] },
+        L: { cx: 200, cy: 238, rx: 126, ry: 120, arcs: [[9, 10, 0, 60], [8, 11, 60, 120], [7, 12, 120, 180]] }
+    };
+    const ZONE_GEO = {};   // zone → { jaw, outer, a0, a1 }
+    for (const [jaw, g] of Object.entries(JAW)) {
+        for (const [zo, zi, a0, a1] of g.arcs) {
+            ZONE_GEO[zo] = { jaw, outer: true, a0, a1 };
+            ZONE_GEO[zi] = { jaw, outer: false, a0, a1 };
+        }
+    }
+
+    const rad = a => a * Math.PI / 180;
+    function pt(jaw, a, off = 0) {   // PDF向きの座標
+        const g = JAW[jaw];
+        return [g.cx + (g.rx + off) * Math.cos(rad(a)), g.cy + (g.ry + off) * Math.sin(rad(a))];
+    }
+    function mpt(jaw, a, off = 0) {  // かがみ向き（左右反転）の座標
+        const [x, y] = pt(jaw, a, off);
+        return [W - x, y];
+    }
+    function arcPath(jaw, a0, a1, off) {
+        const [x0, y0] = pt(jaw, a0, off), [x1, y1] = pt(jaw, a1, off);
+        const g = JAW[jaw];
+        return `M${x0.toFixed(1)},${y0.toFixed(1)} A${g.rx + off},${g.ry + off} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}`;
+    }
+    function toothSize(jaw, a) {
+        const front = jaw === 'U' ? (a > 240 && a < 300) : (a > 60 && a < 120);
+        if (front) return { w: 21, d: 30 };
+        const back = jaw === 'U' ? (a < 210 || a > 330) : (a < 30 || a > 150);
+        return back ? { w: 30, d: 40 } : { w: 26, d: 35 };
+    }
+
+    // 歯の一覧：外側ゾーン・内側ゾーン・ゾーン内の番号（4本ずつ）
+    const TEETH = [];
+    for (const [jaw, g] of Object.entries(JAW)) {
+        for (const [zo, zi, a0] of g.arcs) {
+            for (let k = 0; k < 4; k++) {
+                const a = a0 + (k + 0.5) * 15;
+                TEETH.push({ jaw, a, zo, zi, k, ...toothSize(jaw, a) });
+            }
+        }
+    }
+
+    // きまった ばらつき（毎回おなじ よごれかた）
+    function seeded(n) {
+        let s = n * 9301 + 49297;
+        return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+    }
+
+    function buildMouth(root) {
+        let gums = '', teeth = '', grime = '', glow = '', treasures = '', germs = '', rings = '';
+
+        for (const [jaw, g] of Object.entries(JAW)) {
+            const a0 = jaw === 'U' ? 180 : 0, a1 = jaw === 'U' ? 360 : 180;
+            gums += `<path d="${arcPath(jaw, a0 - 4, a1 + 4, 0)}" fill="none" stroke="#c94f6d" stroke-width="74" stroke-linecap="round"/>
+                     <path d="${arcPath(jaw, a0 - 4, a1 + 4, 0)}" fill="none" stroke="#f590a6" stroke-width="66" stroke-linecap="round"/>`;
+        }
+
+        TEETH.forEach((t, i) => {
+            const [x, y] = pt(t.jaw, t.a);
+            const tr = `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(t.a - 90).toFixed(1)})`;
+            const hw = t.w / 2, hd = t.d / 2;
+            teeth += `<g class="tooth" transform="${tr}">
+                <rect x="${-hw}" y="${-hd}" width="${t.w}" height="${t.d}" rx="8" fill="url(#gTooth)" stroke="#9fb3c3" stroke-width="1.6"/>
+                <path d="M${-hw + 5} 0 H${hw - 5}" stroke="#d5dfe7" stroke-width="1.4"/>
+                <path class="sparkle" data-t="${i}" d="M0 -7 L1.6 -1.6 L7 0 L1.6 1.6 L0 7 L-1.6 1.6 L-7 0 L-1.6 -1.6Z" fill="#fff" stroke="#7dd3fc" stroke-width="1"/>
+            </g>`;
+            // よごれ：外側の半分と 内側の半分
+            for (const outer of [true, false]) {
+                const rnd = seeded(i * 2 + (outer ? 1 : 0) + 1);
+                const y0 = outer ? 0 : -hd;
+                let crumbs = '';
+                const cols = ['#6b4a1f', '#5d8f2e', '#a0520c', '#3c2a14', '#c98a2b'];
+                const n = 2 + Math.floor(rnd() * 3);
+                for (let c = 0; c < n; c++) {
+                    const cx = (rnd() - 0.5) * (t.w - 6), cy = y0 + 3 + rnd() * (hd - 6), r = 1.4 + rnd() * 2.4;
+                    crumbs += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r.toFixed(1)}" fill="${cols[Math.floor(rnd() * cols.length)]}"/>`;
+                }
+                grime += `<g class="grime" data-z="${outer ? t.zo : t.zi}" data-k="${t.k}" transform="${tr}">
+                    <g filter="url(#plaque)"><rect x="${-hw - 1}" y="${y0 - (outer ? 1 : 0)}" width="${t.w + 2}" height="${hd + 1}" rx="6" fill="url(#gPlaque)"/></g>
+                    ${crumbs}
+                </g>`;
+            }
+        });
+
+        for (const [z, geo] of Object.entries(ZONE_GEO)) {
+            const off = geo.outer ? 27 : -27;
+            glow += `<path class="zone-glow" data-z="${z}" d="${arcPath(geo.jaw, geo.a0 + 3, geo.a1 - 3, off)}"/>`;
+            const am = (geo.a0 + geo.a1) / 2;
+            const [tx, ty] = mpt(geo.jaw, am, geo.outer ? 9 : -9);
+            treasures += `<g class="treasure" data-z="${z}" transform="translate(${tx.toFixed(1)} ${ty.toFixed(1)})"><g class="tr-in">${treasureArt(z)}</g></g>`;
+            const [gx, gy] = mpt(geo.jaw, am, geo.outer ? 40 : -42);
+            const hue = ['#7ccf3a', '#a66cff', '#ff9f43'][z % 3];
+            germs += `<g class="germ" data-z="${z}" transform="translate(${gx.toFixed(1)} ${gy.toFixed(1)})"><g class="germ-scale"><g class="germ-body">
+                <path d="M-13 -3 L-17 -9 L-10 -8 L-9 -15 L-3 -11 L1 -17 L4 -11 L11 -14 L10 -7 L17 -8 L13 -2 L18 3 L12 5 L14 12 L7 10 L4 16 L0 10 L-5 15 L-7 9 L-14 11 L-12 4 L-18 2Z" fill="${hue}" stroke="#17324d" stroke-width="2" stroke-linejoin="round"/>
+                <circle cx="-5" cy="-1" r="4.2" fill="#fff" stroke="#17324d" stroke-width="1.2"/><circle cx="5" cy="-1" r="4.2" fill="#fff" stroke="#17324d" stroke-width="1.2"/>
+                <circle cx="-4" cy="0" r="2" fill="#17324d"/><circle cx="6" cy="0" r="2" fill="#17324d"/>
+                <path d="M-9 -7 L-2 -4 M9 -7 L2 -4" stroke="#17324d" stroke-width="2" stroke-linecap="round"/>
+                <path d="M-4 6 Q0 3 4 6" stroke="#17324d" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            </g></g></g>`;
+            rings += `<circle class="zone-ring" data-z="${z}" cx="${gx.toFixed(1)}" cy="${gy.toFixed(1)}" r="22"/>`;
+        }
+
+        root.innerHTML = `<svg viewBox="0 0 ${W} 440" preserveAspectRatio="xMidYMid meet">
+            <rect x="8" y="8" width="384" height="424" rx="150" fill="#ff8f8f" stroke="#17324d" stroke-width="3"/>
+            <rect x="26" y="26" width="348" height="388" rx="130" fill="#5b1a2b"/>
+            <ellipse cx="200" cy="150" rx="84" ry="56" fill="#e8768f" opacity=".55"/>
+            <path d="M200 104 V190 M176 120 Q200 130 224 120 M170 142 Q200 152 230 142 M168 164 Q200 174 232 164" stroke="#c94f6d" stroke-width="3" fill="none" opacity=".6"/>
+            <ellipse cx="200" cy="300" rx="80" ry="58" fill="#ef8aa0"/>
+            <path d="M200 262 V330" stroke="#c9566f" stroke-width="3" opacity=".6"/>
+            <g transform="translate(${W} 0) scale(-1 1)">${gums}${teeth}</g>
+            <g class="treasures">${treasures}</g>
+            <g transform="translate(${W} 0) scale(-1 1)">${grime}${glow}</g>
+            <g class="germs">${germs}</g>
+            <g class="rings">${rings}</g>
+            <g class="foam"></g>
+            <text x="200" y="168" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" opacity=".8">うえの歯</text>
+            <text x="200" y="300" text-anchor="middle" font-size="13" font-weight="800" fill="#fff" opacity=".8">したの歯</text>
+            <text x="22" y="226" font-size="14" font-weight="800" fill="#17324d" transform="rotate(-90 22 226)" text-anchor="middle">ひだり</text>
+            <text x="378" y="226" font-size="14" font-weight="800" fill="#17324d" transform="rotate(90 378 226)" text-anchor="middle">みぎ</text>
+        </svg>`;
+
+        const q = sel => [...root.querySelectorAll(sel)];
+        const grimeEls = {};
+        q('.grime').forEach(el => { (grimeEls[el.dataset.z] ||= [])[el.dataset.k] = el; });
+        const byZone = sel => Object.fromEntries(q(sel).map(el => [el.dataset.z, el]));
+        const m = {
+            svg: root.querySelector('svg'),
+            grime: grimeEls,
+            germ: byZone('.germ'),
+            glow: byZone('.zone-glow'),
+            ring: byZone('.zone-ring'),
+            treasure: byZone('.treasure'),
+            sparkles: q('.sparkle'),
+            foam: root.querySelector('.foam'),
+            last: {},
+            setZone(z, p) {
+                const key = Math.round(p * 200);
+                if (m.last[z] === key) return [];
+                m.last[z] = key;
+                const cleaned = [];
+                m.grime[z].forEach((el, k) => {
+                    const o = Math.max(0, Math.min(1, 1 - (p * 4 - k)));
+                    if (o === 0 && el.style.opacity !== '0') cleaned.push(k);
+                    el.style.opacity = o;
+                });
+                const germ = m.germ[z];
+                germ.querySelector('.germ-scale').setAttribute('transform', `scale(${(1 - 0.6 * Math.min(1, p)).toFixed(3)})`);
+                germ.classList.toggle('gone', p >= 1);
+                // たからものは みがくほど うかびあがる（さいしょは うっすら）
+                m.treasure[z].style.opacity = Math.min(1, 0.12 + Math.max(0, p - 0.25) * 1.2).toFixed(2);
+                // その歯の 外側も内側も きれいなら キラキラ
+                TEETH.forEach((t, i) => {
+                    if (t.zo != z && t.zi != z) return;
+                    const clean = m.isClean(t.zo, t.k) && m.isClean(t.zi, t.k);
+                    m.sparkles[i].classList.toggle('on', clean);
+                });
+                return cleaned;
+            },
+            isClean(z, k) { return m.grime[z][k].style.opacity === '0'; },
+            highlight(zones) {
+                for (const z of Object.keys(ZONE_GEO)) {
+                    const on = zones.includes(Number(z));
+                    m.glow[z].classList.toggle('on', on);
+                    m.ring[z].classList.toggle('on', on);
+                    m.germ[z].classList.toggle('scared', on);
+                }
+            },
+            toothPos(z, k) {  // 画面上の座標（SVG 内）
+                const geo = ZONE_GEO[z];
+                const t = TEETH.find(t => (t.zo == z || t.zi == z) && t.k === k);
+                return mpt(geo.jaw, t.a, geo.outer ? t.d / 4 : -t.d / 4);
+            }
+        };
+        return m;
+    }
+
+    /* =========================================================
+       状態
+       ========================================================= */
+    const HOLD_SEC = 0.6;      // 信号がとぎれても、この秒数は「みがいている」とみなす
+    // FAST（1分）／BASIC（2分）：みがく 秒数を かえる（場所は ぜんぶ）
+    const COURSES = { fast: { scale: 0.5, next: 0.7, done: 650 }, basic: { scale: 1, next: 1.2, done: 1000 } };
+    let course = (() => { try { return localStorage.getItem('hamigaki-mode') === 'fast' ? 'fast' : 'basic'; } catch (e) { return 'basic'; } })();
+    const S = {
+        mode: 'title',           // title | count | next | brush | done | result
+        sim: true,
+        sound: true,
+        tasks: makeTasks(),
+        queue: [],
+        cur: null,               // { t, wall, wrong, praised, beep }
+        round: 1,
+        modeLeft: 0,
+        goodSec: 0,
+        wallSec: 0,
+        found: new Set(),
+        ended: false
+    };
+    let time = 0;
+    const motionUntil = [0, 0, 0, 0];
+    const keyHeld = new Set();
+    const pointerHeld = [false, false, false, false];
+    let mouth = null;
+    let timers = [];
+
+    function later(ms, fn) { timers.push(setTimeout(fn, ms)); }
+    function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+    const isDone = t => t.done >= t.need;
+    const isBrushing = m => motionUntil[m] > time;
+    const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+    function zoneRate(z) {
+        const list = S.tasks.filter(t => t.zones.includes(z));
+        return list.reduce((s, t) => s + Math.min(t.done, t.need), 0) / list.reduce((s, t) => s + t.need, 0);
+    }
+    function overallRate() {
+        return S.tasks.reduce((s, t) => s + Math.min(t.done, t.need), 0) / S.tasks.reduce((s, t) => s + t.need, 0);
+    }
+
+    /* =========================================================
+       入力（micro:bit / キーボード / ボタン）
+       ========================================================= */
+    const UART_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    const UART_TX_CHAR_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+    const UART_RX_CHAR_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+    let rxCharacteristic = null;
+    let feedbackBusy = false;
+
+    async function connectBluetooth() {
+        initAudio();
+        if (!navigator.bluetooth) {
+            toast('この ブラウザは Bluetooth に たいおう していません。テストモードで ためしてね');
+            return;
+        }
+        try {
+            const device = await navigator.bluetooth.requestDevice({
+                filters: [{ namePrefix: "BBC micro:bit" }],
+                optionalServices: [UART_SERVICE_UUID]
+            });
+            device.addEventListener('gattserverdisconnected', () => {
+                rxCharacteristic = null;
+                setSim(true);
+                toast('micro:bit との せつぞくが きれました。テスト用ボタンで つづけられます');
+            });
+            const server = await device.gatt.connect();
+            const service = await server.getPrimaryService(UART_SERVICE_UUID);
+            rxCharacteristic = await service.getCharacteristic(UART_RX_CHAR_UUID);
+            const txChar = await service.getCharacteristic(UART_TX_CHAR_UUID);
+            await txChar.startNotifications();
+            txChar.addEventListener('characteristicvaluechanged', (e) => {
+                const text = new TextDecoder().decode(e.target.value);
+                text.split(/\r?\n/).map(s => s.trim()).filter(Boolean).forEach(onSignal);
+            });
+            start(false);
+        } catch (error) {
+            console.error(error);
+            toast('せつぞく できませんでした。もういちど ためしてね');
+        }
+    }
+
+    function onSignal(code) {
+        if (/^[0-3]$/.test(code)) motionUntil[Number(code)] = time + HOLD_SEC;
+    }
+
+    async function sendFeedback(msg) {
+        if (!rxCharacteristic || S.sim || feedbackBusy) return;
+        feedbackBusy = true;
+        try {
+            await rxCharacteristic.writeValue(new TextEncoder().encode(msg + "\n"));
+        } catch (e) {
+            console.error("送信エラー:", e);
+        }
+        feedbackBusy = false;
+    }
+
+    const KEY_MOTION = { ArrowUp: 0, ArrowDown: 0, ArrowLeft: 1, ArrowRight: 1, c: 2, C: 2, g: 3, G: 3 };
+    window.addEventListener('keydown', (e) => {
+        if (e.key in KEY_MOTION) { keyHeld.add(e.key); e.preventDefault(); return; }
+        if (e.key === 'm' || e.key === 'M') toggleSound();
+    });
+    window.addEventListener('keyup', (e) => {
+        if (e.key in KEY_MOTION) { keyHeld.delete(e.key); motionUntil[KEY_MOTION[e.key]] = 0; }
+    });
+    window.addEventListener('blur', () => { keyHeld.clear(); pointerHeld.fill(false); });
+
+    document.querySelectorAll('.mbtn').forEach(el => {
+        const m = Number(el.dataset.m);
+        const release = () => { pointerHeld[m] = false; motionUntil[m] = 0; };
+        el.addEventListener('pointerdown', (e) => { initAudio(); pointerHeld[m] = true; el.setPointerCapture(e.pointerId); });
+        el.addEventListener('pointerup', release);
+        el.addEventListener('pointercancel', release);
+        el.addEventListener('lostpointercapture', release);
+    });
+
+    function pollHeld() {
+        keyHeld.forEach(k => { motionUntil[KEY_MOTION[k]] = time + HOLD_SEC; });
+        pointerHeld.forEach((h, m) => { if (h) motionUntil[m] = time + HOLD_SEC; });
+    }
+
+    /* =========================================================
+       すすめかた
+       ========================================================= */
+    function start(sim) {
+        initAudio();
+        setSim(sim);
+        clearTimers();
+        S.tasks = makeTasks();
+        S.tasks.forEach(t => { t.need *= COURSES[course].scale; });
+        S.queue = S.tasks.slice();
+        pickIdioms();
+        S.round = 1;
+        S.goodSec = 0;
+        S.wallSec = 0;
+        S.found = new Set();
+        S.ended = false;
+        S.cur = null;
+        mouth = buildMouth($('mouth'));
+        for (let z = 1; z <= 12; z++) mouth.setZone(z, 0);
+        buildSlots();
+        buildCourse();
+        $('title').classList.add('hidden');
+        $('result').classList.add('hidden');
+        $('round-tag').classList.add('hidden');
+        say('じゅんびは いい？ かがみの まえで ハブラシを もってね。', true);
+        countdown(() => nextTask());
+    }
+
+    function countdown(done) {
+        S.mode = 'count';
+        const el = $('count');
+        const nums = ['3', '2', '1', 'スタート！'];
+        el.classList.remove('hidden');
+        nums.forEach((n, i) => later(1500 + i * 900, () => {
+            const span = $('count-n');
+            span.textContent = n;
+            span.style.fontSize = n.length > 1 ? 'clamp(60px, 10vw, 120px)' : '';
+            span.style.animation = 'none'; void span.offsetWidth; span.style.animation = '';
+            sfx.beep(i === 3);
+        }));
+        later(1500 + nums.length * 900, () => { el.classList.add('hidden'); done(); });
+    }
+
+    function nextTask() {
+        while (S.queue.length && isDone(S.queue[0])) S.queue.shift();
+        if (!S.queue.length) {
+            const left = S.tasks.filter(t => !isDone(t));
+            if (left.length && !S.ended) {
+                S.round++;
+                S.queue = left.slice();
+                S.mode = 'done';
+                $('round-tag').classList.remove('hidden');
+                banner('みがきのこし チェック！', `あと ${left.length}か しょ。ここも ピカピカに しよう！`);
+                say(`みがきのこし チェック！ あと ${left.length}かしょ だよ。`, true);
+                later(2600, nextTask);
+                return;
+            }
+            finish();
+            return;
+        }
+        const t = S.queue.shift();
+        S.cur = { t, wall: 0, wrong: 0, wrongSaid: false, praised: false, beep: 99 };
+        S.mode = 'next';
+        S.modeLeft = COURSES[course].next;
+        showTask(t);
+        const m = MOTIONS[t.motion];
+        const place = taskLabel(t).replace('・', 'の、').replace('（', 'の、').replace('）', '');
+        say(`つぎは、${place}。${m.name}で ${Math.ceil(t.need - t.done)}びょう！`, true);
+        coachTalk();
+    }
+
+    function showTask(t) {
+        const m = MOTIONS[t.motion];
+        const pos = S.tasks.indexOf(t) + 1;
+        $('step').textContent = `STEP ${pos} / ${S.tasks.length}`;
+        $('zone-name').textContent = taskLabel(t);
+        $('zone-hint').textContent = t.hint || '';
+        $('motion-row').style.setProperty('--c', m.color);
+        $('demo').style.setProperty('--c', m.color);
+        $('demo').dataset.m = t.motion;
+        $('motion-name').innerHTML = `<i>${m.icon}</i>${m.name}`;
+        $('motion-sub').textContent = S.sim ? m.key : 'ゲージが たまるまで つづけよう';
+        setBubble(`つぎは ここ！ ${m.short}で ${Math.ceil(t.need - t.done)}びょう みがこう。`);
+        setStatus('ここを みがく じゅんび…', '');
+        mouth.highlight(t.zones);
+        updateCourse();
+    }
+
+    function update(dt) {
+        if (S.mode === 'title' || S.mode === 'result') return;
+        S.wallSec += dt;
+
+        if (S.mode === 'next') {
+            S.modeLeft -= dt;
+            if (S.modeLeft <= 0) {
+                S.mode = 'brush';
+                setStatus('みがいてね！', '');
+            }
+            return;
+        }
+        if (S.mode !== 'brush') return;
+
+        const c = S.cur;
+        const t = c.t;
+        c.wall += dt;
+        const good = isBrushing(t.motion);
+        const other = [0, 1, 2, 3].some(m => m !== t.motion && isBrushing(m));
+
+        if (good) {
+            t.done = Math.min(t.need, t.done + dt);
+            if (t.need - t.done < 1e-6) t.done = t.need;
+            S.goodSec += dt;
+            c.wrong = 0;
+            sfx.brush(dt);
+            spawnFoam(t, dt);
+            const left = t.need - t.done;
+            if (!c.praised && t.done / t.need >= 0.5 && left > 1.5) {
+                c.praised = true;
+                const words = ['いいね！ そのちょうし！', 'じょうず！ よごれが おちてきたよ！', 'ナイス！ バイキンが にげていく！', 'その うごき、ばっちり！'];
+                const w = words[Math.floor(Math.random() * words.length)];
+                setBubble(w);
+                say(w);
+                coachTalk();
+            }
+            const sec = Math.ceil(left);
+            if (sec <= 3 && sec < c.beep && left > 0.05) { c.beep = sec; sfx.tick(); }
+            setStatus(left < 2 ? 'あと すこし！ そのまま！' : 'いいよ！ ゲージが たまってる！', 'good');
+        } else if (other) {
+            c.wrong += dt;
+            if (c.wrong > 0.8) {
+                const m = MOTIONS[t.motion];
+                setStatus(`みがきかたが ちがうよ！<br>${m.icon} ${m.name} に してね`, 'warn');
+                if (!c.wrongSaid) { c.wrongSaid = true; say(`${m.name}に してね`, true); }
+            }
+        } else {
+            setStatus('ハブラシを うごかして みがこう！', '');
+        }
+
+        // ゾーンの よごれと たからもの
+        for (const z of t.zones) {
+            const p = zoneRate(z);
+            const cleaned = mouth.setZone(z, p);
+            cleaned.forEach(k => toothCleaned(z, k));
+            if (p >= 1 - 1e-6 && !S.found.has(z)) revealTreasure(z);
+        }
+
+        if (isDone(t)) {
+            taskDone();
+        } else if (c.wall > t.need * 2.5 + 15) {
+            skipTask('まだ よごれが のこってるけど、あとで もういちど こよう！');
+        }
+    }
+
+    function taskDone() {
+        const t = S.cur.t;
+        S.mode = 'done';
+        mouth.highlight([]);
+        setStatus('✨ ピカピカ！ ✨', 'done');
+        setBubble('ピカピカに なったね！');
+        sfx.done();
+        sendFeedback("O");
+        if (!t.zones.some(z => S.found.has(z))) say('ピカピカ！');
+        updateCourse();
+        later(COURSES[course].done, nextTask);
+    }
+
+    function skipTask(msg) {
+        if (S.mode !== 'brush' && S.mode !== 'next') return;
+        const t = S.cur.t;
+        t.skipped++;
+        S.queue.push(t);
+        S.mode = 'done';
+        mouth.highlight([]);
+        setStatus(msg, 'warn');
+        setBubble('だいじょうぶ！ さいごに もういちど みがこうね。');
+        say('あとで もういちど みがこうね', true);
+        updateCourse();
+        later(1500, nextTask);
+    }
+
+    function finish(early = false) {
+        clearTimers();
+        S.mode = 'result';
+        S.ended = true;
+        mouth.highlight([]);
+        $('count').classList.add('hidden');
+        $('banner').classList.add('hidden');
+
+        const pct = Math.round(overallRate() * 100);
+        const all = pct >= 100;
+        const skips = S.tasks.reduce((s, t) => s + t.skipped, 0);
+        const stars = all ? (skips === 0 ? 3 : 2) : pct >= 60 ? 1 : 0;
+        $('res-stars').textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+        $('res-title').textContent = all ? 'ぜんぶ ピカピカ！' : early ? 'きょうは ここまで' : 'おつかれさま！';
+        $('res-pct').textContent = pct + '%';
+        $('res-good').textContent = fmt(Math.round(S.goodSec));
+        const doneIdioms = ZONE_GROUPS.filter(g => g.every(z => S.found.has(z))).length;
+        $('res-tr').textContent = `${doneIdioms} / 3`;
+
+        const before = buildMouth($('mini-before'));
+        for (let z = 1; z <= 12; z++) before.setZone(z, 0);
+        const after = buildMouth($('mini-after'));
+        for (let z = 1; z <= 12; z++) {
+            after.setZone(z, zoneRate(z));
+            after.treasure[z].classList.toggle('collected', S.found.has(z));
+        }
+
+        $('res-treasures').innerHTML = IDIOM_SET.map((d, i) => {
+            const g = ZONE_GROUPS[i];
+            const done = g.every(z => S.found.has(z));
+            const shown = g.map((z, k) => S.found.has(z) ? d.w[k] : '？').join('');
+            return done
+                ? `<div class="ri"><div class="w">${d.w}</div><div class="r">${d.r}</div>${d.m}</div>`
+                : `<div class="ri none"><div class="w">${shown}</div>まだ ほりだせて いない 字が あるよ</div>`;
+        }).join('');
+
+        const weakest = Object.keys(ZONES).map(Number).filter(z => zoneRate(z) < 1);
+        $('res-msg').innerHTML = all
+            ? (skips === 0 ? 'みがきのこし ゼロ！ はいしゃさんも びっくりの ピカピカだよ。' : 'さいごまで あきらめずに ぜんぶ みがけたね！')
+            : `まだ よごれが のこっている ところ：${weakest.map(z => `${ZONES[z].jaw}の${ZONES[z].part}（${ZONES[z].face}）`).join('、')}<br>つぎは ここも ピカピカに しよう！`;
+
+        $('result').classList.remove('hidden');
+        sfx.fanfare();
+        sendFeedback(all ? "O" : "X");
+        say(all ? `ぜんぶ ピカピカ！ 四字熟語を ${doneIdioms}つ ほりだしたよ！` : 'おつかれさま！ のこった ところは つぎに みがこうね。', true);
+    }
+
+    function backToTitle() {
+        clearTimers();
+        S.mode = 'title';
+        $('result').classList.add('hidden');
+        $('title').classList.remove('hidden');
+        resetBoard();
+    }
+
+    function resetBoard() {
+        S.tasks = makeTasks();
+        pickIdioms();
+        S.found = new Set();
+        mouth = buildMouth($('mouth'));
+        for (let z = 1; z <= 12; z++) mouth.setZone(z, 0);
+        buildSlots();
+        buildCourse();
+        $('overall-n').textContent = 0;
+        $('overall-fill').style.width = '0%';
+    }
+
+    /* =========================================================
+       はっくつ・キラキラ
+       ========================================================= */
+    function toothCleaned(z, k) {
+        const [x, y] = mouth.toothPos(z, k);
+        sparkBurst(x, y);
+        sfx.squeak(k);
+    }
+
+    function revealTreasure(z) {
+        S.found.add(z);
+        const el = mouth.treasure[z];
+        el.classList.add('found');
+        sfx.treasure();
+        sendFeedback("O");
+        const gi = groupOf(z);
+        const complete = ZONE_GROUPS[gi].every(q => S.found.has(q));
+        setBubble(`よごれの したから 「${KANJI[z]}」の 字が でてきた！`);
+        if (!complete) say('あたらしい 字を ほりだした！', true);
+        coachTalk();
+        later(900, () => {
+            const from = el.getBoundingClientRect();
+            const slot = document.querySelector(`.slot[data-z="${z}"]`);
+            const to = slot.getBoundingClientRect();
+            const fly = document.createElement('div');
+            fly.className = 'fly';
+            fly.innerHTML = `<svg viewBox="-13 -13 26 26">${treasureArt(z)}</svg>`;
+            const size = Math.max(from.width, 40);
+            Object.assign(fly.style, { left: from.left + from.width / 2 - size / 2 + 'px', top: from.top + from.height / 2 - size / 2 + 'px', width: size + 'px', height: size + 'px' });
+            document.body.appendChild(fly);
+            el.classList.add('collected');
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                Object.assign(fly.style, { left: to.left + 'px', top: to.top + 'px', width: to.width + 'px', height: to.height + 'px' });
+            }));
+            setTimeout(() => {
+                fly.remove();
+                slot.classList.add('got');
+                slot.innerHTML = `<svg viewBox="-13 -13 26 26">${treasureArt(z)}</svg>`;
+                if (complete) idiomComplete(gi);
+            }, 950);
+        });
+        if (complete) say(`四字熟語が そろった！ ${IDIOM_SET[gi].r}。${IDIOM_SET[gi].m}`, true);
+    }
+
+    function idiomComplete(i) {
+        const d = IDIOM_SET[i];
+        const row = document.querySelector(`.idiom[data-i="${i}"]`);
+        row.classList.add('done');
+        row.querySelector('.idiom-info').innerHTML = `<b>${d.w}（${d.r}）</b>${d.m}`;
+        $('treasure-n').textContent = ZONE_GROUPS.filter(g => g.every(z => S.found.has(z))).length;
+        setBubble(`「${d.w}」かんせい！ ${d.m}`);
+        coachTalk();
+        sfx.fanfare();
+    }
+
+    // あわ と キラキラ（SVG の中で うごかす）
+    const particles = [];
+    let foamAcc = 0;
+    function spawnFoam(t, dt) {
+        foamAcc += dt;
+        while (foamAcc > 0.07) {
+            foamAcc -= 0.07;
+            const z = t.zones[Math.floor(Math.random() * t.zones.length)];
+            const p = zoneRate(z);
+            const k = Math.min(3, Math.floor(p * 4));
+            const [x, y] = mouth.toothPos(z, k);
+            addParticle('foam', x + (Math.random() - .5) * 16, y + (Math.random() - .5) * 12);
+        }
+    }
+    function sparkBurst(x, y) {
+        for (let i = 0; i < 8; i++) addParticle('spark', x, y);
+    }
+    function addParticle(type, x, y) {
+        if (particles.length > 90) return;
+        const el = document.createElementNS('http://www.w3.org/2000/svg', type === 'foam' ? 'circle' : 'path');
+        const a = Math.random() * Math.PI * 2;
+        const sp = type === 'foam' ? 10 + Math.random() * 20 : 40 + Math.random() * 60;
+        const p = { type, el, x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (type === 'foam' ? 12 : 20), life: 0, max: type === 'foam' ? 0.9 + Math.random() * 0.6 : 0.6, r: type === 'foam' ? 2.5 + Math.random() * 4 : 4 + Math.random() * 3 };
+        if (type === 'foam') {
+            el.setAttribute('fill', 'rgba(255,255,255,.55)');
+            el.setAttribute('stroke', '#fff');
+            el.setAttribute('stroke-width', '1.2');
+        } else {
+            el.setAttribute('d', 'M0 -1 L.25 -.25 L1 0 L.25 .25 L0 1 L-.25 .25 L-1 0 L-.25 -.25Z');
+            el.setAttribute('fill', '#ffe680');
+            el.setAttribute('stroke', '#f2a900');
+            el.setAttribute('stroke-width', '.08');
+        }
+        mouth.foam.appendChild(el);
+        particles.push(p);
+    }
+    function updateParticles(dt) {
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.life += dt;
+            if (p.life >= p.max || !p.el.isConnected) { p.el.remove(); particles.splice(i, 1); continue; }
+            const f = p.type === 'foam' ? 0.92 : 0.9;
+            p.vx *= f; p.vy = p.vy * f + (p.type === 'foam' ? -10 : 60) * dt;
+            p.x += p.vx * dt; p.y += p.vy * dt;
+            const a = 1 - p.life / p.max;
+            if (p.type === 'foam') {
+                p.el.setAttribute('cx', p.x.toFixed(1));
+                p.el.setAttribute('cy', p.y.toFixed(1));
+                p.el.setAttribute('r', (p.r * (1 + p.life * .6)).toFixed(1));
+                p.el.setAttribute('opacity', a.toFixed(2));
+            } else {
+                p.el.setAttribute('transform', `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)}) scale(${(p.r * a).toFixed(2)})`);
+            }
+        }
+    }
+
+    /* =========================================================
+       表示
+       ========================================================= */
+    function buildSlots() {
+        $('slots').innerHTML = ZONE_GROUPS.map((g, i) => `
+            <div class="idiom" data-i="${i}">
+                <div class="tiles">${g.map(z => `<div class="slot" data-z="${z}" title="${ZONES[z].jaw}の歯・${ZONES[z].part}（${ZONES[z].face}）">？</div>`).join('')}</div>
+                <div class="idiom-info">${i + 1}つめ の 四字熟語<br>4か所 ピカピカで わかるよ</div>
+            </div>`).join('');
+        $('treasure-n').textContent = 0;
+    }
+
+    function buildCourse() {
+        $('course').innerHTML = S.tasks.map((t, i) => `<div class="cdot" data-i="${i}" title="${taskLabel(t)}"></div>`).join('');
+    }
+
+    function updateCourse() {
+        document.querySelectorAll('.cdot').forEach(el => {
+            const t = S.tasks[Number(el.dataset.i)];
+            el.classList.toggle('done', isDone(t));
+            el.classList.toggle('skip', !isDone(t) && t.skipped > 0);
+            el.classList.toggle('now', !!S.cur && S.cur.t === t && S.mode !== 'done');
+        });
+    }
+
+    let lastStatus = '';
+    function setStatus(html, cls) {
+        const key = html + '|' + cls;
+        if (key === lastStatus) return;
+        lastStatus = key;
+        const el = $('status');
+        el.innerHTML = html;
+        el.className = cls;
+    }
+    function setBubble(text) { $('bubble').textContent = text; }
+    function coachTalk() {
+        const f = $('coach-face');
+        f.classList.remove('talk'); void f.offsetWidth; f.classList.add('talk');
+    }
+
+    function render() {
+        const pct = Math.round(overallRate() * 100);
+        $('overall-n').textContent = pct;
+        $('overall-fill').style.width = pct + '%';
+        for (let i = 0; i < 4; i++) {
+            const b = document.querySelector(`.mbtn[data-m="${i}"]`);
+            b.classList.toggle('on', isBrushing(i));
+        }
+        if (S.cur && (S.mode === 'brush' || S.mode === 'next' || S.mode === 'done')) {
+            const t = S.cur.t;
+            const left = Math.max(0, t.need - t.done);
+            $('sec').textContent = Math.ceil(left - 1e-6);
+            $('ring-fg').style.strokeDashoffset = 289.03 * (1 - t.done / t.need);
+            $('ring').classList.toggle('idle', !(S.mode === 'brush' && isBrushing(t.motion)));
+        }
+    }
+
+    function banner(big, sub) {
+        $('banner-big').textContent = big;
+        $('banner-sub').textContent = sub;
+        const b = $('banner');
+        b.classList.remove('hidden');
+        b.style.animation = 'none'; void b.offsetWidth; b.style.animation = 'pop .45s cubic-bezier(.2, 1.4, .4, 1)';
+        later(2400, () => b.classList.add('hidden'));
+    }
+
+    let toastTimer = null;
+    function toast(text) {
+        const t = $('toast');
+        t.textContent = text;
+        t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    function setSim(sim) {
+        S.sim = sim;
+        document.body.classList.toggle('sim', sim);
+    }
+
+    /* =========================================================
+       おと と こえ
+       ========================================================= */
+    let ac = null, noiseBuf = null, brushAcc = 0;
+    function initAudio() {
+        if (!ac) {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+            ac = new AC();
+            noiseBuf = ac.createBuffer(1, ac.sampleRate * 0.5, ac.sampleRate);
+            const d = noiseBuf.getChannelData(0);
+            for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        }
+        if (ac.state === 'suspended') ac.resume();
+    }
+    function tone(freq, dur, { type = 'triangle', vol = 0.08, delay = 0 } = {}) {
+        if (!ac || !S.sound) return;
+        const t0 = ac.currentTime + delay;
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, t0);
+        g.gain.setValueAtTime(vol, t0);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        o.connect(g).connect(ac.destination);
+        o.start(t0); o.stop(t0 + dur + 0.02);
+    }
+    function noise(dur, freq, vol) {
+        if (!ac || !S.sound) return;
+        const t0 = ac.currentTime;
+        const src = ac.createBufferSource();
+        src.buffer = noiseBuf;
+        const f = ac.createBiquadFilter();
+        f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 1.5;
+        const g = ac.createGain();
+        g.gain.setValueAtTime(vol, t0);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        src.connect(f).connect(g).connect(ac.destination);
+        src.start(t0); src.stop(t0 + dur + 0.02);
+    }
+    const sfx = {
+        brush(dt) { brushAcc += dt; if (brushAcc > 0.22) { brushAcc = 0; noise(0.08, 3500 + Math.random() * 1500, 0.05); } },
+        squeak(k) { tone(1047 * Math.pow(1.12, k), 0.12, { vol: 0.07 }); tone(1568 * Math.pow(1.12, k), 0.1, { vol: 0.04, delay: 0.05 }); },
+        tick() { tone(1320, 0.06, { type: 'square', vol: 0.04 }); },
+        beep(go) { tone(go ? 1320 : 880, go ? 0.35 : 0.15, { type: 'square', vol: 0.05 }); },
+        done() { [784, 988, 1319].forEach((f, i) => tone(f, 0.16, { vol: 0.08, delay: i * 0.07 })); },
+        treasure() { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, 0.22, { vol: 0.08, delay: i * 0.08 })); },
+        fanfare() { [523, 659, 784, 659, 784, 1047].forEach((f, i) => tone(f, i === 5 ? 0.6 : 0.18, { type: 'square', vol: 0.05, delay: i * 0.14 })); }
+    };
+
+    function say(text, important = false) {
+        if (!('speechSynthesis' in window) || !S.sound) return;
+        if (!important && speechSynthesis.speaking) return;
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'ja-JP';
+        u.rate = 1.05;
+        u.pitch = 1.15;
+        speechSynthesis.speak(u);
+    }
+
+    function toggleSound() {
+        S.sound = !S.sound;
+        $('btn-sound').textContent = S.sound ? '🔊' : '🔇';
+        if (!S.sound && 'speechSynthesis' in window) speechSynthesis.cancel();
+    }
+
+    /* =========================================================
+       はじめる
+       ========================================================= */
+    $('btn-bt').addEventListener('click', connectBluetooth);
+    $('btn-sim').addEventListener('click', () => start(true));
+    $('btn-again').addEventListener('click', () => start(S.sim));
+    $('btn-home').addEventListener('click', backToTitle);
+    $('btn-sound').addEventListener('click', toggleSound);
+    $('btn-skip').addEventListener('click', () => skipTask('この場所は さいごに もういちど みがこう！'));
+    $('btn-end').addEventListener('click', () => { if (S.mode !== 'title' && S.mode !== 'result') finish(true); });
+
+    function setCourse(c) {
+        course = c;
+        try { localStorage.setItem('hamigaki-mode', c); } catch (e) {}
+        document.querySelectorAll('#mode-pick button').forEach(b => b.classList.toggle('on', b.dataset.mode === c));
+    }
+    document.querySelectorAll('#mode-pick button').forEach(b => b.addEventListener('click', () => setCourse(b.dataset.mode)));
+    setCourse(course);
+
+    resetBoard();
+    setSim(true);
+
+    let lastT = performance.now();
+    function loop(now) {
+        const dt = Math.min(0.1, Math.max(0, (now - lastT) / 1000));
+        lastT = now;
+        time += dt;
+        pollHeld();
+        update(dt);
+        render();
+        updateParticles(dt);
+        requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+</script>
+</body>
+</html>
